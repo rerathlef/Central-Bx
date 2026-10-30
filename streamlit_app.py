@@ -1,9 +1,4 @@
-import os
-import shutil
-import zipfile
-import py_compile
-
-streamlit_app_v3 = '''import streamlit as st
+import streamlit as st
 import subprocess
 import sys
 import os
@@ -16,43 +11,32 @@ import datetime
 import drive_utils
 
 # =====================================================================
-# CONFIGURAÇÃO DA PÁGINA (CENTRAL BX DE AUTOMAÇÕES)
+# CONFIGURAÇÃO DA PÁGINA (BX FINANCE THEME - CENTRAL DE AUTOMAÇÕES)
 # =====================================================================
 st.set_page_config(
-    page_title="Central BX de Automações | Bx finance",
+    page_title="Bx finance | Central BX de Automações",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # =====================================================================
-# ESTILO CUSTOMIZADO (CSS) - FIEL AO LAYOUT DA IMAGEM DE REFERÊNCIA
+# ESTILO CUSTOMIZADO (CSS) - CORES BX BLUE
+# Cor Principal BX: #6259A4
+# Cor Clara BX (Hover): #7D75BE
+# Cor Escura BX (Shadows): #473F7A
+# RGB BX: 98, 89, 164
 # =====================================================================
-CUSTOM_CSS = \'\'\'
+CUSTOM_CSS = '''
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
 
-/* Fundo Geral Escuro com Glow Roxo e Ondas Vetoriais no Rodapé */
+/* Fundo Geral Escuro Premium */
 .stApp {
-    background-color: #07060e;
-    background-image:
-        radial-gradient(circle at 28% 22%, rgba(72, 56, 145, 0.28) 0%, rgba(15, 12, 30, 0.0) 52%),
-        radial-gradient(circle at 75% 65%, rgba(62, 48, 128, 0.18) 0%, rgba(7, 6, 14, 0.0) 55%),
-        linear-gradient(180deg, #0b0918 0%, #07060e 100%);
+    background-color: #050505;
+    background-image: radial-gradient(circle at 50% 0%, #100f1a 0%, #050505 40%);
     color: #e2e8f0;
     font-family: 'Inter', sans-serif;
-}
-
-/* Ondas sutis decorativas no fundo inferior (idêntico ao mockup) */
-.bx-bg-waves {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 180px;
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.45;
 }
 
 /* Ocultar elementos padrão do Streamlit */
@@ -62,30 +46,26 @@ header {visibility: hidden;}
 
 /* Container Principal */
 .main .block-container {
-    padding-top: 2.8rem;
-    padding-bottom: 3rem;
-    max-width: 1280px;
-    position: relative;
-    z-index: 1;
+    padding-top: 2rem;
+    max-width: 1300px;
 }
 
-/* =====================================================================
-   HEADER: ESQUERDA "CENTRAL BX DE AUTOMAÇÕES" | DIREITA "Bx finance"
-   ===================================================================== */
+/* Header Central BX de Automações */
 .bx-header-container {
-    padding: 0.5rem 0 1.8rem 0;
-    margin-bottom: 1.8rem;
+    padding: 1rem 0 2rem 0;
+    border-bottom: 1px solid rgba(98, 89, 164, 0.2);
+    margin-bottom: 2.2rem;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: flex-end;
 }
 .bx-title-wrapper {
     display: flex;
     flex-direction: column;
 }
 .bx-central-title {
-    font-size: 3.1rem;
-    font-weight: 900;
+    font-size: 2.5rem;
+    font-weight: 800;
     line-height: 1.05;
     letter-spacing: -1px;
     color: #ffffff;
@@ -93,189 +73,128 @@ header {visibility: hidden;}
     text-transform: uppercase;
 }
 .bx-central-title .bx-accent {
-    color: #7D75BE;
+    color: #6259A4;
 }
-.bx-subtitle-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 14px;
-}
-.bx-subtitle-dash {
-    width: 22px;
-    height: 2px;
-    background-color: #7D75BE;
-    display: inline-block;
-}
-.bx-subtitle-text {
-    color: #a0aec0;
-    font-size: 0.82rem;
+.bx-subtitle {
+    color: #718096;
+    font-size: 0.95rem;
     font-weight: 600;
-    letter-spacing: 2.5px;
+    margin-top: 15px;
+    letter-spacing: 2px;
     text-transform: uppercase;
-    font-family: 'JetBrains Mono', monospace;
+    border-left: 3px solid #6259A4;
+    padding-left: 10px;
 }
 
-/* Logo BX Finance no canto superior direito */
+/* Logo BX Finance no canto direito */
 .bx-right-logo-wrapper {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    justify-content: flex-start;
-    text-align: right;
+    justify-content: flex-end;
 }
 .bx-logo-text {
-    font-size: 3.6rem;
-    font-weight: 800;
-    line-height: 0.9;
-    letter-spacing: -3px;
+    font-size: 4.5rem; 
+    font-weight: 800; 
+    line-height: 0.9; 
+    letter-spacing: -4px; 
     font-family: 'Inter', sans-serif;
 }
 .bx-logo-text .b { color: #ffffff; }
-.bx-logo-text .x { color: #7D75BE; }
+.bx-logo-text .x { color: #6259A4; }
 .bx-logo-sub {
-    font-size: 1.15rem;
-    font-weight: 400;
-    color: #cbd5e0;
-    letter-spacing: 1px;
-    margin-top: 4px;
+    font-size: 1.4rem; 
+    font-weight: 300; 
+    color: #a0aec0; 
+    letter-spacing: 0.5px; 
+    margin-top: 0px;
 }
 .bx-build-tag {
-    color: #718096;
+    color: #4A5568;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    letter-spacing: 1.5px;
+    font-size: 0.75rem;
     margin-top: 6px;
 }
 
-/* Título "SELECIONE O PROJETO" */
-.bx-select-title {
-    color: #ffffff;
-    font-family: 'Inter', sans-serif;
-    font-weight: 800;
-    font-size: 1.15rem;
+/* Label da seção de cards de clientes */
+.bx-section-label {
+    color: #a0aec0;
+    font-weight: 600;
+    font-size: 0.85rem;
     text-transform: uppercase;
-    letter-spacing: 3px;
-    margin-bottom: 14px;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
 }
 
-/* =====================================================================
-   BOTÕES PILL DE SELEÇÃO DE PROJETO (SECONDARY = INATIVO, PRIMARY = ATIVO)
-   ===================================================================== */
-div[data-testid="stButton"] > button[kind="primary"] {
-    background: linear-gradient(135deg, #7468C5 0%, #5B50A0 100%) !important;
-    color: #ffffff !important;
-    font-family: 'Inter', sans-serif !important;
-    font-weight: 800 !important;
-    font-size: 0.9rem !important;
-    border: 1px solid rgba(168, 158, 240, 0.45) !important;
-    border-radius: 999px !important;
-    padding: 1.25rem 1.8rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 1.8px !important;
-    box-shadow: 0 0 28px rgba(116, 104, 197, 0.55) !important;
-    transition: all 0.3s ease !important;
-}
-div[data-testid="stButton"] > button[kind="primary"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 0 36px rgba(125, 117, 190, 0.75) !important;
-}
-
-div[data-testid="stButton"] > button[kind="secondary"] {
-    background: rgba(18, 16, 32, 0.75) !important;
-    color: #e2e8f0 !important;
-    font-family: 'Inter', sans-serif !important;
-    font-weight: 700 !important;
-    font-size: 0.9rem !important;
-    border: 1px solid rgba(125, 117, 190, 0.32) !important;
-    border-radius: 999px !important;
-    padding: 1.25rem 1.8rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 1.8px !important;
-    box-shadow: none !important;
-    transition: all 0.3s ease !important;
-}
-div[data-testid="stButton"] > button[kind="secondary"]:hover {
-    border-color: #7D75BE !important;
-    background: rgba(40, 35, 72, 0.55) !important;
-    color: #ffffff !important;
-    transform: translateY(-2px) !important;
-}
-
-/* Inputs de Diretório Premium */
+/* Inputs Premium */
 .stTextInput > div > div > input {
-    background-color: rgba(15, 14, 26, 0.85) !important;
+    background-color: #0f0f11 !important;
     color: #ffffff !important;
-    border: 1px solid rgba(125, 117, 190, 0.25) !important;
-    border-radius: 12px !important;
-    padding: 0.95rem 1.1rem !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.92rem !important;
+    border: 1px solid #1f232b !important;
+    border-radius: 8px;
+    padding: 1rem !important;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 .stTextInput > div > div > input:focus {
-    border-color: #7D75BE !important;
-    box-shadow: 0 0 0 1px #7D75BE, 0 0 18px rgba(125, 117, 190, 0.25) !important;
+    border-color: #6259A4 !important;
+    box-shadow: 0 0 0 1px #6259A4, 0 0 15px rgba(98, 89, 164, 0.2) !important;
 }
 .stTextInput label {
     color: #a0aec0 !important;
     font-weight: 600 !important;
-    font-size: 0.82rem !important;
+    font-size: 0.9rem !important;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
-    margin-bottom: 6px;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
 }
 
-/* Divisor sutil entre os módulos */
-.bx-module-divider {
-    border-top: 1px solid rgba(125, 117, 190, 0.16);
-    margin: 1.6rem 0 1.4rem 0;
-}
-
-/* =====================================================================
-   CARDS DE STATUS À DIREITA (IDÊNTICOS À IMAGEM DE REFERÊNCIA)
-   ===================================================================== */
-.dash-card {
-    background: rgba(20, 18, 38, 0.62);
-    border: 1px solid rgba(125, 117, 190, 0.22);
-    border-radius: 18px;
-    padding: 26px 20px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
-}
-.dash-value {
-    font-size: 2.3rem;
+/* Botões e Cardzinhos Azul BX */
+.stButton > button {
+    background: linear-gradient(135deg, #6259A4 0%, #473F7A 100%);
+    color: #ffffff !important;
+    font-family: 'Inter', sans-serif;
     font-weight: 800;
-    color: #ffffff;
-    line-height: 1.15;
-    font-family: 'JetBrains Mono', monospace;
-}
-.dash-label {
-    font-size: 0.72rem;
-    color: #a0aec0;
+    font-size: 1.05rem;
+    border: none;
+    padding: 1.6rem 2rem;
+    border-radius: 8px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
     letter-spacing: 2px;
-    font-weight: 600;
-    margin-top: 8px;
+    box-shadow: 0 4px 20px rgba(98, 89, 164, 0.25);
+    margin-top: 10px;
+}
+.stButton > button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(98, 89, 164, 0.4);
+    background: linear-gradient(135deg, #7D75BE 0%, #6259A4 100%);
+}
+.stButton > button:active {
+    transform: translateY(1px);
+}
+
+/* Divisor entre blocos */
+.bx-module-divider {
+    border-top: 1px solid rgba(98, 89, 164, 0.2);
+    margin: 2rem 0 1.6rem 0;
 }
 
 /* Console Estilo Terminal Hacker/Finance */
 .bx-terminal-wrapper {
-    background-color: #0a0a0f;
-    border: 1px solid rgba(125, 117, 190, 0.25);
-    border-radius: 14px;
+    background-color: #0a0a0c;
+    border: 1px solid #1f232b;
+    border-radius: 12px;
     box-shadow: inset 0 2px 20px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.8);
     overflow: hidden;
     margin-top: 1rem;
 }
 .bx-terminal-header {
-    background-color: #12111d;
+    background-color: #121418;
     padding: 12px 20px;
-    border-bottom: 1px solid rgba(125, 117, 190, 0.18);
+    border-bottom: 1px solid #1f232b;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -304,10 +223,10 @@ div[data-testid="stButton"] > button[kind="secondary"]:hover {
     font-family: 'Inter', sans-serif;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    background: rgba(98, 89, 164, 0.12);
+    background: rgba(98, 89, 164, 0.1);
     padding: 4px 12px;
     border-radius: 20px;
-    border: 1px solid rgba(98, 89, 164, 0.25);
+    border: 1px solid rgba(98, 89, 164, 0.2);
 }
 .pulse {
     width: 8px;
@@ -347,14 +266,29 @@ div[data-testid="stButton"] > button[kind="secondary"]:hover {
 ::-webkit-scrollbar-track { background: #0a0a0c; }
 ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #6259A4; }
-</style>
 
-<!-- Ondas decorativas no rodapé idênticas ao mockup -->
-<svg class="bx-bg-waves" viewBox="0 0 1440 200" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-    <path d="M0 110 C 320 40, 580 180, 920 110 C 1180 55, 1340 130, 1440 110" stroke="rgba(125, 117, 190, 0.22)" stroke-width="1.2" fill="none"/>
-    <path d="M0 145 C 360 75, 620 205, 960 135 C 1200 85, 1360 155, 1440 140" stroke="rgba(125, 117, 190, 0.14)" stroke-width="1.2" fill="none"/>
-</svg>
-\'\'\'
+/* Dashboard Cards (Canto direito do meio pra baixo) */
+.dash-card {
+    background: #0f0f11;
+    border: 1px solid #1f232b;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.dash-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #6259A4, #473F7A);
+}
+.dash-value { font-size: 2.2rem; font-weight: 800; color: #ffffff; line-height: 1.2; font-family: 'JetBrains Mono', monospace;}
+.dash-label { font-size: 0.75rem; color: #a0aec0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-top: 8px;}
+
+</style>
+'''
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # =====================================================================
@@ -376,9 +310,9 @@ SCRIPT_REVPACK_CS = os.path.join(PASTA_ROBOS_REVPACK, "REVPACK - C.S..py")
 
 # Caminhos Pré-Preenchidos Padrão
 CAMINHOS_PADRAO = {
-    "cativa_sicoob": r"2026\\10 - Outubro\\28.10.2026\\SICOOB",
-    "revpack_cb": r"EXTRATOS BANCÁRIOS\\2026\\10. Outubro\\28",
-    "revpack_cs": r"POSIÇÕES FUNDOS\\2026\\10 - OUT\\Fundos 29.10\\Trabalhados",
+    "cativa_sicoob": r"2026\10 - Outubro\28.10.2026\SICOOB",
+    "revpack_cb": r"EXTRATOS BANCÁRIOS\2026\10. Outubro\28",
+    "revpack_cs": r"POSIÇÕES FUNDOS\2026\10 - OUT\Fundos 29.10\Trabalhados",
 }
 
 # =====================================================================
@@ -411,7 +345,7 @@ def salvar_caminho_especifico(chave, valor):
 
 
 def caminho_sem_sicoob(caminho_sicoob):
-    partes = caminho_sicoob.replace("\\\\", "/").rstrip("/").split("/")
+    partes = caminho_sicoob.replace("\\", "/").rstrip("/").split("/")
     if partes and partes[-1].upper() == "SICOOB":
         partes = partes[:-1]
     return "/".join(partes)
@@ -422,7 +356,7 @@ def get_time():
 
 
 def renderizar_terminal(placeholder, log_list, nome_sh="conciliacao.sh"):
-    html_content = f\'\'\'
+    html_content = f'''
     <div class="bx-terminal-wrapper">
         <div class="bx-terminal-header">
             <div class="terminal-tab">
@@ -434,7 +368,7 @@ def renderizar_terminal(placeholder, log_list, nome_sh="conciliacao.sh"):
             <div class="live-badge"><div class="pulse"></div> SERVER LIVE</div>
         </div>
         <div class="bx-terminal-body" id="terminal-body">
-    \'\'\'
+    '''
 
     for linha in log_list:
         if not linha.strip():
@@ -447,7 +381,7 @@ def renderizar_terminal(placeholder, log_list, nome_sh="conciliacao.sh"):
                 hora_str = f'<span class="log-time">{parts[0]}]</span>'
                 linha = parts[1]
 
-        linha_safe = html.escape(linha).replace('\\n', '<br>')
+        linha_safe = html.escape(linha).replace('\n', '<br>')
 
         css_class = "log-line"
         upper_line = linha.upper()
@@ -464,14 +398,14 @@ def renderizar_terminal(placeholder, log_list, nome_sh="conciliacao.sh"):
 
         html_content += f'<div class="{css_class}">{hora_str}{linha_safe}</div>'
 
-    html_content += \'\'\'
+    html_content += '''
         </div>
         <script>
             var term = window.parent.document.getElementById('terminal-body');
             if(term) { term.scrollTop = term.scrollHeight; }
         </script>
     </div>
-    \'\'\'
+    '''
     placeholder.markdown(html_content, unsafe_allow_html=True)
 
 
@@ -490,7 +424,7 @@ def rodar_robo_com_log(nome_robo, caminho_script, pasta_trabalho, log_placeholde
     )
 
     for linha in processo.stdout:
-        clean_line = linha.strip("\\n")
+        clean_line = linha.strip("\n")
         if clean_line:
             log_atual.append(f"[{get_time()}] {clean_line}")
             renderizar_terminal(log_placeholder, log_atual, nome_sh)
@@ -537,7 +471,7 @@ with st.sidebar:
 
 
 # =====================================================================
-# HEADER PRINCIPAL (IDÊNTICO À IMAGEM ENVIADA)
+# HEADER PRINCIPAL: ESQUERDA "CENTRAL BX DE AUTOMAÇÕES" | DIREITA "Bx finance"
 # =====================================================================
 projeto_ativo = st.session_state.projeto_selecionado
 
@@ -548,14 +482,11 @@ else:
     subtitulo_header = "REVPACK — ROBÔ DE CONCILIAÇÃO BANCÁRIA & CONTROLE DE SACADOS"
     qtd_modulos_card = "02"
 
-st.markdown(f\'\'\'
+st.markdown(f'''
 <div class="bx-header-container">
     <div class="bx-title-wrapper">
         <div class="bx-central-title">CENTRAL <span class="bx-accent">BX</span> DE AUTOMAÇÕES</div>
-        <div class="bx-subtitle-row">
-            <span class="bx-subtitle-dash"></span>
-            <span class="bx-subtitle-text">{subtitulo_header}</span>
-        </div>
+        <div class="bx-subtitle">{subtitulo_header}</div>
     </div>
     <div class="bx-right-logo-wrapper">
         <div class="bx-logo-text"><span class="b">B</span><span class="x">x</span></div>
@@ -563,12 +494,12 @@ st.markdown(f\'\'\'
         <div class="bx-build-tag">[ V 2.0 / BUILD SECURE ]</div>
     </div>
 </div>
-\'\'\', unsafe_allow_html=True)
+''', unsafe_allow_html=True)
 
 # =====================================================================
-# CORPO PRINCIPAL: ESQUERDA (SELECIONE O PROJETO + INPUTS) | DIREITA (CARDS)
+# CORPO PRINCIPAL: ESQUERDA (CARDZINHOS DE PROJETO + INPUTS) | DIREITA (CARDS STATUS)
 # =====================================================================
-col_form, col_space, col_metrics = st.columns([5.2, 0.8, 3.0])
+col_form, col_space, col_metrics = st.columns([5, 0.5, 2.5])
 
 caminhos_atuais = carregar_caminhos_salvos()
 
@@ -577,46 +508,39 @@ botao_rodar_revpack_cb = False
 botao_rodar_revpack_cs = False
 
 with col_form:
-    st.markdown('<div class="bx-select-title">SELECIONE O PROJETO</div>', unsafe_allow_html=True)
-
-    # Botões estilo Pill: o projeto ativo recebe type="primary" (roxo com brilho) e o inativo type="secondary" (escuro com borda)
-    col_p1, col_p2, _ = st.columns([1.65, 1.45, 2.1])
-    with col_p1:
-        tipo_btn_cativa = "primary" if projeto_ativo == "GRUPO CATIVA" else "secondary"
-        if st.button("GRUPO CATIVA", key="pill_cativa", type=tipo_btn_cativa, use_container_width=True):
+    # CARDZINHOS DE SELEÇÃO DE PROJETO (ESTILO BOTÃO PROCESSAR CONCILIAÇÃO)
+    st.markdown('<div class="bx-section-label">SELECIONE O PROJETO:</div>', unsafe_allow_html=True)
+    col_btn_cativa, col_btn_revpack, _ = st.columns([1.8, 1.5, 2.7])
+    with col_btn_cativa:
+        if st.button("GRUPO CATIVA", key="card_select_cativa", use_container_width=True):
             st.session_state.projeto_selecionado = "GRUPO CATIVA"
             st.rerun()
-    with col_p2:
-        tipo_btn_revpack = "primary" if projeto_ativo == "REVPACK" else "secondary"
-        if st.button("REVPACK", key="pill_revpack", type=tipo_btn_revpack, use_container_width=True):
+    with col_btn_revpack:
+        if st.button("REVPACK", key="card_select_revpack", use_container_width=True):
             st.session_state.projeto_selecionado = "REVPACK"
             st.rerun()
 
     st.markdown('<div class="bx-module-divider"></div>', unsafe_allow_html=True)
 
-    # MÓDULOS DE EXECUÇÃO DO PROJETO SELECIONADO
-    if projeto_ativo == "GRUPO CATIVA":
+    # EXIBE OS DIRETÓRIOS E BOTÕES DO PROJETO SELECIONADO
+    if st.session_state.projeto_selecionado == "GRUPO CATIVA":
         caminho_digitado_cativa = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (Referência SICOOB):",
             value=caminhos_atuais["cativa_sicoob"],
-            help=r"Exemplo: 2026\\10 - Outubro\\28.10.2026\\SICOOB",
+            help=r"Exemplo: 2026\10 - Outubro\28.10.2026\SICOOB",
             key="input_cativa_sicoob"
         )
-        c_btn, _ = st.columns([2.2, 3.0])
-        with c_btn:
-            botao_rodar_cativa = st.button("PROCESSAR CONCILIAÇÃO", key="btn_cativa", type="primary", use_container_width=True)
+        botao_rodar_cativa = st.button("PROCESSAR CONCILIAÇÃO", key="btn_cativa")
 
-    elif projeto_ativo == "REVPACK":
+    elif st.session_state.projeto_selecionado == "REVPACK":
         # BLOCO 1 (EM CIMA): CONCILIAÇÃO BANCÁRIA REVPACK
         caminho_digitado_rev_cb = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (CONCILIAÇÃO BANCÁRIA):",
             value=caminhos_atuais["revpack_cb"],
-            help=r"Exemplo: EXTRATOS BANCÁRIOS\\2026\\10. Outubro\\28",
+            help=r"Exemplo: EXTRATOS BANCÁRIOS\2026\10. Outubro\28",
             key="input_revpack_cb"
         )
-        c_btn_cb, _ = st.columns([2.2, 3.0])
-        with c_btn_cb:
-            botao_rodar_revpack_cb = st.button("PROCESSAR CONCILIAÇÃO", key="btn_revpack_cb", type="primary", use_container_width=True)
+        botao_rodar_revpack_cb = st.button("PROCESSAR CONCILIAÇÃO", key="btn_revpack_cb")
 
         st.markdown('<div class="bx-module-divider"></div>', unsafe_allow_html=True)
 
@@ -624,18 +548,16 @@ with col_form:
         caminho_digitado_rev_cs = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (CONTROLE DE SACADOS):",
             value=caminhos_atuais["revpack_cs"],
-            help=r"Exemplo: POSIÇÕES FUNDOS\\2026\\10 - OUT\\Fundos 29.10\\Trabalhados",
+            help=r"Exemplo: POSIÇÕES FUNDOS\2026\10 - OUT\Fundos 29.10\Trabalhados",
             key="input_revpack_cs"
         )
-        c_btn_cs, _ = st.columns([2.5, 2.7])
-        with c_btn_cs:
-            botao_rodar_revpack_cs = st.button("PROCESSAR CONTROLE DE SACADOS", key="btn_revpack_cs", type="primary", use_container_width=True)
+        botao_rodar_revpack_cs = st.button("PROCESSAR CONTROLE DE SACADOS", key="btn_revpack_cs")
 
 with col_metrics:
-    # Posiciona os cards do meio para baixo na direita exatamente como no mockup
-    st.markdown('<div style="margin-top: 115px;"></div>', unsafe_allow_html=True)
-    st.markdown(f\'\'\'
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    # Posiciona os cards do meio para baixo na coluna da direita (como na Imagem 2)
+    st.markdown('<div style="margin-top: 155px;"></div>', unsafe_allow_html=True)
+    st.markdown(f'''
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
         <div class="dash-card">
             <div class="dash-value">{qtd_modulos_card}</div>
             <div class="dash-label">Módulos Auto</div>
@@ -644,12 +566,12 @@ with col_metrics:
             <div class="dash-value" style="color: #38A169;">OK</div>
             <div class="dash-label">GCP Cloud</div>
         </div>
-        <div class="dash-card" style="grid-column: span 2; padding: 22px;">
-            <div class="dash-value" style="font-size: 1.35rem; color: #8C82D8; letter-spacing: 2px;">OAUTH 2.0 ATIVO</div>
+        <div class="dash-card" style="grid-column: span 2; padding: 18px;">
+            <div class="dash-value" style="font-size: 1.3rem; color: #6259A4;">OAUTH 2.0 ATIVO</div>
             <div class="dash-label">Token Security Status</div>
         </div>
     </div>
-    \'\'\', unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -883,20 +805,3 @@ elif st.session_state.mostrar_log_idx is not None:
     idx = st.session_state.mostrar_log_idx
     log_salvo = st.session_state.historico_runs[idx]["log"]
     renderizar_terminal(log_placeholder, log_salvo)
-'''
-
-with open("central_bx/streamlit_app.py", "w", encoding="utf-8") as f:
-    f.write(streamlit_app_v3)
-
-py_compile.compile("central_bx/streamlit_app.py", doraise=True)
-shutil.rmtree("central_bx/__pycache__", ignore_errors=True)
-
-zip_out = "central_bx_finance_unificado.zip"
-with zipfile.ZipFile(zip_out, "w", zipfile.ZIP_DEFLATED) as zf:
-    for root, dirs, files in os.walk("central_bx"):
-        for file in files:
-            full_p = os.path.join(root, file)
-            rel_p = os.path.relpath(full_p, "central_bx")
-            zf.write(full_p, rel_p)
-
-print("Layout v3 compilado e compactado com sucesso!")
