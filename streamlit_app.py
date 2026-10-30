@@ -501,7 +501,7 @@ def rodar_robo_com_log(nome_robo, caminho_script, pasta_trabalho, log_placeholde
 
 
 # =====================================================================
-# CONTROLE DE SESSÃO (MEMÓRIA ISOLADA POR USUÁRIO) E BARRA LATERAL
+# CONTROLE DE SESSÃO (INICIA SEM NENHUM PROJETO SELECIONADO)
 # =====================================================================
 if "historico_runs" not in st.session_state:
     st.session_state.historico_runs = []
@@ -511,8 +511,11 @@ if "projeto_selecionado" not in st.session_state:
     projeto_url = st.query_params.get("projeto", "").upper()
     if projeto_url in ["CATIVA", "GRUPO CATIVA"]:
         st.session_state.projeto_selecionado = "GRUPO CATIVA"
-    else:
+    elif projeto_url == "REVPACK":
         st.session_state.projeto_selecionado = "REVPACK"
+    else:
+        # Inicia sem nenhum projeto selecionado (mostra apenas os cards dos projetos)
+        st.session_state.projeto_selecionado = None
 
 with st.sidebar:
     st.markdown("<h3 style='color: #6259A4; font-weight: 800; font-family: Inter, sans-serif;'>📜 HISTÓRICO</h3>", unsafe_allow_html=True)
@@ -532,16 +535,19 @@ with st.sidebar:
 
 
 # =====================================================================
-# HEADER PRINCIPAL (IDÊNTICO À IMAGEM ENVIADA)
+# HEADER PRINCIPAL
 # =====================================================================
 projeto_ativo = st.session_state.projeto_selecionado
 
 if projeto_ativo == "GRUPO CATIVA":
     subtitulo_header = "GRUPO CATIVA — ROBÔ DE CONCILIAÇÃO BANCÁRIA"
     qtd_modulos_card = "03"
-else:
+elif projeto_ativo == "REVPACK":
     subtitulo_header = "REVPACK — ROBÔ DE CONCILIAÇÃO BANCÁRIA & CONTROLE DE SACADOS"
     qtd_modulos_card = "02"
+else:
+    subtitulo_header = "PAINEL CENTRAL DE ROBÔS DE CONCILIAÇÃO BANCÁRIA & CONTROLE DE SACADOS"
+    qtd_modulos_card = "05"
 
 st.markdown(f'''
 <div class="bx-header-container">
@@ -561,7 +567,7 @@ st.markdown(f'''
 ''', unsafe_allow_html=True)
 
 # =====================================================================
-# CORPO PRINCIPAL: ESQUERDA (SELECIONE O PROJETO + INPUTS) | DIREITA (CARDS)
+# CORPO PRINCIPAL: ESQUERDA (SELECIONE O PROJETO) | DIREITA (CARDS)
 # =====================================================================
 col_form, col_space, col_metrics = st.columns([5.2, 0.8, 3.0])
 
@@ -574,23 +580,29 @@ botao_rodar_revpack_cs = False
 with col_form:
     st.markdown('<div class="bx-select-title">SELECIONE O PROJETO</div>', unsafe_allow_html=True)
 
-    # Botões estilo Pill: o projeto ativo recebe type="primary" (roxo com brilho) e o inativo type="secondary" (escuro com borda)
+    # Botões estilo Pill: Só fica roxo brilhante (primary) depois que o usuário clicar em um deles
     col_p1, col_p2, _ = st.columns([1.65, 1.45, 2.1])
     with col_p1:
         tipo_btn_cativa = "primary" if projeto_ativo == "GRUPO CATIVA" else "secondary"
         if st.button("GRUPO CATIVA", key="pill_cativa", type=tipo_btn_cativa, use_container_width=True):
-            st.session_state.projeto_selecionado = "GRUPO CATIVA"
+            # Se clicar novamente no mesmo, recolhe; se clicar nele fechado, abre o endereçador
+            if st.session_state.projeto_selecionado == "GRUPO CATIVA":
+                st.session_state.projeto_selecionado = None
+            else:
+                st.session_state.projeto_selecionado = "GRUPO CATIVA"
             st.rerun()
     with col_p2:
         tipo_btn_revpack = "primary" if projeto_ativo == "REVPACK" else "secondary"
         if st.button("REVPACK", key="pill_revpack", type=tipo_btn_revpack, use_container_width=True):
-            st.session_state.projeto_selecionado = "REVPACK"
+            if st.session_state.projeto_selecionado == "REVPACK":
+                st.session_state.projeto_selecionado = None
+            else:
+                st.session_state.projeto_selecionado = "REVPACK"
             st.rerun()
 
-    st.markdown('<div class="bx-module-divider"></div>', unsafe_allow_html=True)
-
-    # MÓDULOS DE EXECUÇÃO DO PROJETO SELECIONADO
+    # SÓ EXIBE O ENDEREÇADOR E OS BOTÕES DE RODAR DEPOIS QUE CLICAR EM UM DOS PROJETOS
     if projeto_ativo == "GRUPO CATIVA":
+        st.markdown('<div class="bx-module-divider"></div>', unsafe_allow_html=True)
         caminho_digitado_cativa = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (Referência SICOOB):",
             value=caminhos_atuais["cativa_sicoob"],
@@ -602,6 +614,8 @@ with col_form:
             botao_rodar_cativa = st.button("PROCESSAR CONCILIAÇÃO", key="btn_cativa", type="primary", use_container_width=True)
 
     elif projeto_ativo == "REVPACK":
+        st.markdown('<div class="bx-module-divider"></div>', unsafe_allow_html=True)
+
         # BLOCO 1 (EM CIMA): CONCILIAÇÃO BANCÁRIA REVPACK
         caminho_digitado_rev_cb = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (CONCILIAÇÃO BANCÁRIA):",
@@ -627,7 +641,6 @@ with col_form:
             botao_rodar_revpack_cs = st.button("PROCESSAR CONTROLE DE SACADOS", key="btn_revpack_cs", type="primary", use_container_width=True)
 
 with col_metrics:
-    # Posiciona os cards do meio para baixo na direita exatamente como no mockup
     st.markdown('<div style="margin-top: 115px;"></div>', unsafe_allow_html=True)
     st.markdown(f'''
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
