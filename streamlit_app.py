@@ -11,7 +11,46 @@ import datetime
 import drive_utils
 
 # =====================================================================
-# CONFIGURAÇÃO DA PÁGINA (Central BX de Automações)
+# 1. PAINEL DE DIRETÓRIOS E CONFIGURAÇÕES (EDITE AQUI COM FACILIDADE)
+# =====================================================================
+
+# --- DIRETÓRIOS PRÉ-PREENCHIDOS NA TELA (GOOGLE DRIVE) ---
+DIRETORIO_PADRAO_CATIVA_SICOOB = r"2026\10 - Outubro\28.10.2026\SICOOB"
+
+DIRETORIO_PADRAO_REVPACK_CONCILIACAO = r"EXTRATOS BANCÁRIOS\2026\10. Outubro\28"
+DIRETORIO_PADRAO_REVPACK_SACADOS = r"POSIÇÕES FUNDOS\2026\10 - OUT\Fundos 29.10\Trabalhados"
+
+# --- IDs DAS PASTAS RAIZ NO GOOGLE DRIVE ---
+ID_DRIVE_CATIVA = "1F6NiwgME7xPe_xUQQwzQHwwaBenRXO6N"
+ID_DRIVE_REVPACK_CONCILIACAO = "1_mbhci2ZqyR1zB0Xtcdr-da9WXrlzNQS"
+ID_DRIVE_REVPACK_SACADOS = "10Po_KxUhKI_eUAdYqtJbblDgmWZ3jzqO"
+
+# --- CAMINHOS DOS ROBÔS DENTRO DO REPOSITÓRIO ---
+PASTA_BASE_ROBOS = os.path.join(os.path.dirname(__file__), "robos")
+
+# Scripts Grupo Cativa (robos/CATIVA/)
+PASTA_ROBOS_CATIVA = os.path.join(PASTA_BASE_ROBOS, "CATIVA")
+SCRIPT_CATIVA_PDF = os.path.join(PASTA_ROBOS_CATIVA, "pdf_pt1.py")
+SCRIPT_CATIVA_SICOOB = os.path.join(PASTA_ROBOS_CATIVA, "sicoob.py")
+SCRIPT_CATIVA_OUTROS = os.path.join(PASTA_ROBOS_CATIVA, "outros.py")
+
+# Scripts Revpack (robos/REVPACK/)
+PASTA_ROBOS_REVPACK = os.path.join(PASTA_BASE_ROBOS, "REVPACK")
+SCRIPT_REVPACK_CB = os.path.join(PASTA_ROBOS_REVPACK, "REV - C.B. - AUT.py")
+SCRIPT_REVPACK_CS = os.path.join(PASTA_ROBOS_REVPACK, "REVPACK - C.S..py")
+
+# Arquivo local que memoriza o último caminho digitado na sessão
+CAMINHO_ARQUIVO_ULTIMO_USO = "ultimo_caminho.json"
+
+CAMINHOS_PADRAO = {
+    "cativa_sicoob": DIRETORIO_PADRAO_CATIVA_SICOOB,
+    "revpack_cb": DIRETORIO_PADRAO_REVPACK_CONCILIACAO,
+    "revpack_cs": DIRETORIO_PADRAO_REVPACK_SACADOS,
+}
+
+
+# =====================================================================
+# 2. CONFIGURAÇÃO DA PÁGINA (CENTRAL BX DE AUTOMAÇÕES)
 # =====================================================================
 st.set_page_config(
     page_title="Central BX de Automações | Bx finance",
@@ -21,7 +60,7 @@ st.set_page_config(
 )
 
 # =====================================================================
-# ESTILO CUSTOMIZADO (CSS) - FIEL AO LAYOUT DA IMAGEM DE REFERÊNCIA
+# 3. ESTILO CUSTOMIZADO (CSS) - FIEL AO LAYOUT DA IMAGEM DE REFERÊNCIA
 # =====================================================================
 CUSTOM_CSS = '''
 <style>
@@ -65,7 +104,7 @@ header {visibility: hidden;}
 }
 
 /* =====================================================================
-   HEADER: ESQUERDA "Central BX de Automações" | DIREITA "Bx finance"
+   HEADER: ESQUERDA "CENTRAL BX DE AUTOMAÇÕES" | DIREITA "Bx finance"
    ===================================================================== */
 .bx-header-container {
     padding: 0.5rem 0 1.8rem 0;
@@ -352,32 +391,9 @@ div[data-testid="stButton"] > button[kind="secondary"]:hover {
 '''
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
-# =====================================================================
-# DIRETÓRIOS DOS ROBÔS (ORGANIZADOS POR SUBPASTAS EM robos/)
-# =====================================================================
-CAMINHO_ARQUIVO_ULTIMO_USO = "ultimo_caminho.json"
-PASTA_BASE_ROBOS = os.path.join(os.path.dirname(__file__), "robos")
-
-# Scripts Grupo Cativa (robos/CATIVA/)
-PASTA_ROBOS_CATIVA = os.path.join(PASTA_BASE_ROBOS, "CATIVA")
-SCRIPT_CATIVA_PDF = os.path.join(PASTA_ROBOS_CATIVA, "pdf_pt1.py")
-SCRIPT_CATIVA_SICOOB = os.path.join(PASTA_ROBOS_CATIVA, "sicoob.py")
-SCRIPT_CATIVA_OUTROS = os.path.join(PASTA_ROBOS_CATIVA, "outros.py")
-
-# Scripts Revpack (robos/REVPACK/)
-PASTA_ROBOS_REVPACK = os.path.join(PASTA_BASE_ROBOS, "REVPACK")
-SCRIPT_REVPACK_CB = os.path.join(PASTA_ROBOS_REVPACK, "REV - C.B. - AUT.py")
-SCRIPT_REVPACK_CS = os.path.join(PASTA_ROBOS_REVPACK, "REVPACK - C.S..py")
-
-# Caminhos Pré-Preenchidos Padrão
-CAMINHOS_PADRAO = {
-    "cativa_sicoob": r"2026\10 - Outubro\28.10.2026\SICOOB",
-    "revpack_cb": r"EXTRATOS BANCÁRIOS\2026\10. Outubro\28",
-    "revpack_cs": r"POSIÇÕES FUNDOS\2026\10 - OUT\Fundos 29.10\Trabalhados",
-}
 
 # =====================================================================
-# FUNÇÕES DE APOIO E GERENCIAMENTO DE CAMINHOS
+# 4. FUNÇÕES DE APOIO E GERENCIAMENTO DE CAMINHOS
 # =====================================================================
 def carregar_caminhos_salvos():
     caminhos = dict(CAMINHOS_PADRAO)
@@ -501,7 +517,7 @@ def rodar_robo_com_log(nome_robo, caminho_script, pasta_trabalho, log_placeholde
 
 
 # =====================================================================
-# CONTROLE DE SESSÃO (INICIA SEM NENHUM PROJETO SELECIONADO)
+# 5. CONTROLE DE SESSÃO (INICIA SEM NENHUM PROJETO SELECIONADO)
 # =====================================================================
 if "historico_runs" not in st.session_state:
     st.session_state.historico_runs = []
@@ -514,7 +530,6 @@ if "projeto_selecionado" not in st.session_state:
     elif projeto_url == "REVPACK":
         st.session_state.projeto_selecionado = "REVPACK"
     else:
-        # Inicia sem nenhum projeto selecionado (mostra apenas os cards dos projetos)
         st.session_state.projeto_selecionado = None
 
 with st.sidebar:
@@ -535,7 +550,7 @@ with st.sidebar:
 
 
 # =====================================================================
-# HEADER PRINCIPAL
+# 6. HEADER PRINCIPAL E INTERFACE
 # =====================================================================
 projeto_ativo = st.session_state.projeto_selecionado
 
@@ -566,9 +581,6 @@ st.markdown(f'''
 </div>
 ''', unsafe_allow_html=True)
 
-# =====================================================================
-# CORPO PRINCIPAL: ESQUERDA (SELECIONE O PROJETO) | DIREITA (CARDS)
-# =====================================================================
 col_form, col_space, col_metrics = st.columns([5.2, 0.8, 3.0])
 
 caminhos_atuais = carregar_caminhos_salvos()
@@ -580,12 +592,10 @@ botao_rodar_revpack_cs = False
 with col_form:
     st.markdown('<div class="bx-select-title">SELECIONE O PROJETO</div>', unsafe_allow_html=True)
 
-    # Botões estilo Pill: Só fica roxo brilhante (primary) depois que o usuário clicar em um deles
     col_p1, col_p2, _ = st.columns([1.65, 1.45, 2.1])
     with col_p1:
         tipo_btn_cativa = "primary" if projeto_ativo == "GRUPO CATIVA" else "secondary"
         if st.button("GRUPO CATIVA", key="pill_cativa", type=tipo_btn_cativa, use_container_width=True):
-            # Se clicar novamente no mesmo, recolhe; se clicar nele fechado, abre o endereçador
             if st.session_state.projeto_selecionado == "GRUPO CATIVA":
                 st.session_state.projeto_selecionado = None
             else:
@@ -606,7 +616,7 @@ with col_form:
         caminho_digitado_cativa = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (Referência SICOOB):",
             value=caminhos_atuais["cativa_sicoob"],
-            help=r"Exemplo: 2026\10 - Outubro\28.10.2026\SICOOB",
+            help=f"Exemplo: {DIRETORIO_PADRAO_CATIVA_SICOOB}",
             key="input_cativa_sicoob"
         )
         c_btn, _ = st.columns([2.2, 3.0])
@@ -620,7 +630,7 @@ with col_form:
         caminho_digitado_rev_cb = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (CONCILIAÇÃO BANCÁRIA):",
             value=caminhos_atuais["revpack_cb"],
-            help=r"Exemplo: EXTRATOS BANCÁRIOS\2026\10. Outubro\28",
+            help=f"Exemplo: {DIRETORIO_PADRAO_REVPACK_CONCILIACAO}",
             key="input_revpack_cb"
         )
         c_btn_cb, _ = st.columns([2.2, 3.0])
@@ -633,7 +643,7 @@ with col_form:
         caminho_digitado_rev_cs = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (CONTROLE DE SACADOS):",
             value=caminhos_atuais["revpack_cs"],
-            help=r"Exemplo: POSIÇÕES FUNDOS\2026\10 - OUT\Fundos 29.10\Trabalhados",
+            help=f"Exemplo: {DIRETORIO_PADRAO_REVPACK_SACADOS}",
             key="input_revpack_cs"
         )
         c_btn_cs, _ = st.columns([2.5, 2.7])
@@ -663,7 +673,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 
 # =====================================================================
-# 1. EXECUÇÃO: GRUPO CATIVA (SICOOB + OUTROS)
+# 7. EXECUÇÃO: GRUPO CATIVA (SICOOB + OUTROS)
 # =====================================================================
 if botao_rodar_cativa:
     st.markdown("<h3 style='color: #ffffff; font-weight: 800; font-size: 1.2rem; margin-bottom: 0px;'>🖥️ TERMINAL DE PROCESSAMENTO</h3>", unsafe_allow_html=True)
@@ -688,11 +698,11 @@ if botao_rodar_cativa:
         renderizar_terminal(log_placeholder, log_atual, nome_sh)
 
         id_pasta_sicoob = drive_utils.navegar_caminho(
-            servico, caminho_digitado_cativa, id_raiz=drive_utils.ID_PASTA_RAIZ_CATIVA
+            servico, caminho_digitado_cativa, id_raiz=ID_DRIVE_CATIVA
         )
         caminho_outros = caminho_sem_sicoob(caminho_digitado_cativa)
         id_pasta_outros = drive_utils.navegar_caminho(
-            servico, caminho_outros, id_raiz=drive_utils.ID_PASTA_RAIZ_CATIVA
+            servico, caminho_outros, id_raiz=ID_DRIVE_CATIVA
         )
 
         destino_sicoob = os.path.join(pasta_temporaria, "SICOOB")
@@ -790,7 +800,7 @@ if botao_rodar_cativa:
 
 
 # =====================================================================
-# 2. EXECUÇÃO: REVPACK (CONCILIAÇÃO BANCÁRIA OU CONTROLE DE SACADOS)
+# 8. EXECUÇÃO: REVPACK (CONCILIAÇÃO BANCÁRIA OU CONTROLE DE SACADOS)
 # =====================================================================
 elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
     if botao_rodar_revpack_cb:
@@ -798,7 +808,7 @@ elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
         nome_modulo = "AUT - CB - REVPACK"
         script_alvo = SCRIPT_REVPACK_CB
         caminho_alvo = caminho_digitado_rev_cb
-        id_raiz_alvo = drive_utils.ID_PASTA_REVPACK_CONCILIACAO
+        id_raiz_alvo = ID_DRIVE_REVPACK_CONCILIACAO
         chave_salvar = "revpack_cb"
         nome_sh = "revpack_conciliacao.sh"
     else:
@@ -806,7 +816,7 @@ elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
         nome_modulo = "CONTROLE DE SACADOS - REVPACK"
         script_alvo = SCRIPT_REVPACK_CS
         caminho_alvo = caminho_digitado_rev_cs
-        id_raiz_alvo = drive_utils.ID_PASTA_REVPACK_SACADOS
+        id_raiz_alvo = ID_DRIVE_REVPACK_SACADOS
         chave_salvar = "revpack_cs"
         nome_sh = "revpack_sacados.sh"
 
@@ -883,7 +893,7 @@ elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
 
 
 # =====================================================================
-# RENDERIZAR LOG HISTÓRICO SE SELECIONADO NA LATERAL
+# 9. RENDERIZAR LOG HISTÓRICO SE SELECIONADO NA LATERAL
 # =====================================================================
 elif st.session_state.mostrar_log_idx is not None:
     st.markdown("<h3 style='color: #ffffff; font-weight: 800; font-size: 1.2rem; margin-bottom: 0px;'>🖥️ TERMINAL DE PROCESSAMENTO (HISTÓRICO)</h3>", unsafe_allow_html=True)
