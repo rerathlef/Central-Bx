@@ -11,7 +11,7 @@ import datetime
 import drive_utils
 
 # =====================================================================
-# CONFIGURAÇÃO DA PÁGINA (CENTRAL BX DE AUTOMAÇÕES)
+# CONFIGURAÇÃO DA PÁGINA (Central BX de Automações)
 # =====================================================================
 st.set_page_config(
     page_title="Central BX de Automações | Bx finance",
@@ -65,7 +65,7 @@ header {visibility: hidden;}
 }
 
 /* =====================================================================
-   HEADER: ESQUERDA "Central de automações Bx" | DIREITA "Bx finance"
+   HEADER: ESQUERDA "Central BX de Automações" | DIREITA "Bx finance"
    ===================================================================== */
 .bx-header-container {
     padding: 0.5rem 0 1.8rem 0;
