@@ -19,8 +19,8 @@ SCOPES = ["https://www.googleapis.com/auth/drive"]
 # IDs DAS PASTAS RAIZ NO GOOGLE DRIVE POR PROJETO
 # =====================================================================
 ID_PASTA_RAIZ_CATIVA = "1F6NiwgME7xPe_xUQQwzQHwwaBenRXO6N"
-ID_PASTA_REVPACK_CONCILIACAO = "1_mbhci2ZqyR1zB0Xtcdr-da9WXrlzNQS"
-ID_PASTA_REVPACK_SACADOS = "10Po_KxUhKI_eUAdYqtJbblDgmWZ3jzqO"
+ID_PASTA_REVPACK_CONCILIACAO = "1a5CLnMLhinJAAqdD9Tdr3fvFBtcf_hj0"
+ID_PASTA_REVPACK_SACADOS = "1a5CLnMLhinJAAqdD9Tdr3fvFBtcf_hj0"
 
 # Compatibilidade com chamadas padrão
 ID_PASTA_RAIZ = ID_PASTA_RAIZ_CATIVA
