@@ -65,7 +65,7 @@ header {visibility: hidden;}
 }
 
 /* =====================================================================
-   HEADER: ESQUERDA "CENTRAL BX DE AUTOMAÇÕES" | DIREITA "Bx finance"
+   HEADER: ESQUERDA "Central de automações Bx" | DIREITA "Bx finance"
    ===================================================================== */
 .bx-header-container {
     padding: 0.5rem 0 1.8rem 0;
