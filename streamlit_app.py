@@ -11,10 +11,10 @@ import datetime
 import drive_utils
 
 # =====================================================================
-# CONFIGURAÇÃO DA PÁGINA (BX FINANCE THEME - CENTRAL MULTI-PROJETOS)
+# CONFIGURAÇÃO DA PÁGINA (BX FINANCE THEME - CENTRAL DE AUTOMAÇÕES)
 # =====================================================================
 st.set_page_config(
-    page_title="Bx finance | Central de Automação",
+    page_title="Bx finance | Central BX de Automações",
     page_icon="💠",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -50,7 +50,7 @@ header {visibility: hidden;}
     max-width: 1300px;
 }
 
-/* Header BX Finance */
+/* Header Central BX de Automações */
 .bx-header-container {
     padding: 1rem 0 2rem 0;
     border-bottom: 1px solid rgba(98, 89, 164, 0.2);
@@ -62,6 +62,36 @@ header {visibility: hidden;}
 .bx-title-wrapper {
     display: flex;
     flex-direction: column;
+}
+.bx-central-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -1px;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+}
+.bx-central-title .bx-accent {
+    color: #6259A4;
+}
+.bx-subtitle {
+    color: #718096;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-top: 15px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-left: 3px solid #6259A4;
+    padding-left: 10px;
+}
+
+/* Logo BX Finance no canto direito */
+.bx-right-logo-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-end;
 }
 .bx-logo-text {
     font-size: 4.5rem; 
@@ -79,33 +109,21 @@ header {visibility: hidden;}
     letter-spacing: 0.5px; 
     margin-top: 0px;
 }
-.bx-subtitle {
-    color: #718096;
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-top: 15px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    border-left: 3px solid #6259A4;
-    padding-left: 10px;
+.bx-build-tag {
+    color: #4A5568;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    margin-top: 6px;
 }
 
-/* Seletor de Projeto Premium */
-div[data-testid="stSelectbox"] > div > div {
-    background-color: #0f0f11 !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(98, 89, 164, 0.45) !important;
-    border-radius: 8px !important;
-    font-family: 'Inter', sans-serif !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-}
-div[data-testid="stSelectbox"] label {
-    color: #7D75BE !important;
-    font-weight: 700 !important;
-    font-size: 0.8rem !important;
+/* Label da seção de cards de clientes */
+.bx-section-label {
+    color: #a0aec0;
+    font-weight: 600;
+    font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 1.5px;
+    margin-bottom: 6px;
 }
 
 /* Inputs Premium */
@@ -133,22 +151,21 @@ div[data-testid="stSelectbox"] label {
     margin-bottom: 8px;
 }
 
-/* Botão de Ação Azul BX */
+/* Botões e Cardzinhos Azul BX */
 .stButton > button {
     background: linear-gradient(135deg, #6259A4 0%, #473F7A 100%);
     color: #ffffff !important;
     font-family: 'Inter', sans-serif;
     font-weight: 800;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     border: none;
-    padding: 1.8rem 2rem;
+    padding: 1.6rem 2rem;
     border-radius: 8px;
-    width: 100%;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
     letter-spacing: 2px;
     box-shadow: 0 4px 20px rgba(98, 89, 164, 0.25);
-    margin-top: 18px;
+    margin-top: 10px;
 }
 .stButton > button:hover {
     transform: translateY(-3px);
@@ -159,10 +176,10 @@ div[data-testid="stSelectbox"] label {
     transform: translateY(1px);
 }
 
-/* Divisor entre blocos da mesma empresa */
+/* Divisor entre blocos */
 .bx-module-divider {
     border-top: 1px solid rgba(98, 89, 164, 0.2);
-    margin: 2.2rem 0 1.8rem 0;
+    margin: 2rem 0 1.6rem 0;
 }
 
 /* Console Estilo Terminal Hacker/Finance */
@@ -250,7 +267,7 @@ div[data-testid="stSelectbox"] label {
 ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #6259A4; }
 
-/* Dashboard Cards */
+/* Dashboard Cards (Canto direito do meio pra baixo) */
 .dash-card {
     background: #0f0f11;
     border: 1px solid #1f232b;
@@ -280,7 +297,7 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 CAMINHO_ARQUIVO_ULTIMO_USO = "ultimo_caminho.json"
 PASTA_BASE_ROBOS = os.path.join(os.path.dirname(__file__), "robos")
 
-# Scripts Cativa (robos/CATIVA/)
+# Scripts Grupo Cativa (robos/CATIVA/)
 PASTA_ROBOS_CATIVA = os.path.join(PASTA_BASE_ROBOS, "CATIVA")
 SCRIPT_CATIVA_PDF = os.path.join(PASTA_ROBOS_CATIVA, "pdf_pt1.py")
 SCRIPT_CATIVA_SICOOB = os.path.join(PASTA_ROBOS_CATIVA, "sicoob.py")
@@ -307,7 +324,6 @@ def carregar_caminhos_salvos():
         try:
             with open(CAMINHO_ARQUIVO_ULTIMO_USO, "r", encoding="utf-8") as f:
                 dados = json.load(f)
-                # Compatibilidade com formato antigo da Cativa {"caminho": "..."}
                 if "caminho" in dados and "cativa_sicoob" not in dados:
                     caminhos["cativa_sicoob"] = dados["caminho"]
                 for k in CAMINHOS_PADRAO:
@@ -430,6 +446,12 @@ if "historico_runs" not in st.session_state:
     st.session_state.historico_runs = []
 if "mostrar_log_idx" not in st.session_state:
     st.session_state.mostrar_log_idx = None
+if "projeto_selecionado" not in st.session_state:
+    projeto_url = st.query_params.get("projeto", "").upper()
+    if projeto_url in ["CATIVA", "GRUPO CATIVA"]:
+        st.session_state.projeto_selecionado = "GRUPO CATIVA"
+    else:
+        st.session_state.projeto_selecionado = "REVPACK"
 
 with st.sidebar:
     st.markdown("<h3 style='color: #6259A4; font-weight: 800; font-family: Inter, sans-serif;'>📜 HISTÓRICO</h3>", unsafe_allow_html=True)
@@ -449,47 +471,34 @@ with st.sidebar:
 
 
 # =====================================================================
-# SELETOR DE PROJETO / CLIENTE (PERMITE TAMBÉM ?projeto=REVPACK NA URL)
+# HEADER PRINCIPAL: ESQUERDA "CENTRAL BX DE AUTOMAÇÕES" | DIREITA "Bx finance"
 # =====================================================================
-OPCOES_PROJETOS = ["REVPACK", "CATIVA"]
-projeto_url = st.query_params.get("projeto", "").upper()
-idx_inicial = OPCOES_PROJETOS.index(projeto_url) if projeto_url in OPCOES_PROJETOS else 0
+projeto_ativo = st.session_state.projeto_selecionado
 
-col_sel, _ = st.columns([2.5, 5.5])
-with col_sel:
-    projeto_ativo = st.selectbox(
-        "AMBIENTE / GRUPO EMPRESARIAL ATIVO:",
-        options=OPCOES_PROJETOS,
-        index=idx_inicial,
-        key="seletor_projeto_bx"
-    )
-
-# Configura textos do Header e Cards conforme o projeto selecionado
-if projeto_ativo == "CATIVA":
-    subtitulo_header = "Robô de conciliação bancária"
+if projeto_ativo == "GRUPO CATIVA":
+    subtitulo_header = "GRUPO CATIVA — ROBÔ DE CONCILIAÇÃO BANCÁRIA"
     qtd_modulos_card = "03"
 else:
-    subtitulo_header = "Robô de conciliação bancária & Controle de sacados"
+    subtitulo_header = "REVPACK — ROBÔ DE CONCILIAÇÃO BANCÁRIA & CONTROLE DE SACADOS"
     qtd_modulos_card = "02"
 
-# =====================================================================
-# HEADER PRINCIPAL BX FINANCE DINÂMICO
-# =====================================================================
 st.markdown(f'''
 <div class="bx-header-container">
-<div class="bx-title-wrapper">
-<div class="bx-logo-text"><span class="b">B</span><span class="x">x</span></div>
-<div class="bx-logo-sub">finance</div>
-<div class="bx-subtitle">{subtitulo_header}</div>
-</div>
-<div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; padding-bottom: 5px;">
-<div style="color: #a0aec0; font-family: 'Inter', sans-serif; font-size: 0.75rem; letter-spacing: 5px; font-weight: 600; margin-bottom: -8px;">— GRUPO —</div>
-<div style="color: #ffffff; font-family: 'Inter', sans-serif; font-size: 2.4rem; font-weight: 800; letter-spacing: 1px;">{projeto_ativo}</div>
-<div style="color: #4A5568; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; margin-top: 5px;">[ V 2.0 / BUILD SECURE ]</div>
-</div>
+    <div class="bx-title-wrapper">
+        <div class="bx-central-title">CENTRAL <span class="bx-accent">BX</span> DE AUTOMAÇÕES</div>
+        <div class="bx-subtitle">{subtitulo_header}</div>
+    </div>
+    <div class="bx-right-logo-wrapper">
+        <div class="bx-logo-text"><span class="b">B</span><span class="x">x</span></div>
+        <div class="bx-logo-sub">finance</div>
+        <div class="bx-build-tag">[ V 2.0 / BUILD SECURE ]</div>
+    </div>
 </div>
 ''', unsafe_allow_html=True)
 
+# =====================================================================
+# CORPO PRINCIPAL: ESQUERDA (CARDZINHOS DE PROJETO + INPUTS) | DIREITA (CARDS STATUS)
+# =====================================================================
 col_form, col_space, col_metrics = st.columns([5, 0.5, 2.5])
 
 caminhos_atuais = carregar_caminhos_salvos()
@@ -499,7 +508,22 @@ botao_rodar_revpack_cb = False
 botao_rodar_revpack_cs = False
 
 with col_form:
-    if projeto_ativo == "CATIVA":
+    # CARDZINHOS DE SELEÇÃO DE PROJETO (ESTILO BOTÃO PROCESSAR CONCILIAÇÃO)
+    st.markdown('<div class="bx-section-label">SELECIONE O PROJETO:</div>', unsafe_allow_html=True)
+    col_btn_cativa, col_btn_revpack, _ = st.columns([1.8, 1.5, 2.7])
+    with col_btn_cativa:
+        if st.button("GRUPO CATIVA", key="card_select_cativa", use_container_width=True):
+            st.session_state.projeto_selecionado = "GRUPO CATIVA"
+            st.rerun()
+    with col_btn_revpack:
+        if st.button("REVPACK", key="card_select_revpack", use_container_width=True):
+            st.session_state.projeto_selecionado = "REVPACK"
+            st.rerun()
+
+    st.markdown('<div class="bx-module-divider"></div>', unsafe_allow_html=True)
+
+    # EXIBE OS DIRETÓRIOS E BOTÕES DO PROJETO SELECIONADO
+    if st.session_state.projeto_selecionado == "GRUPO CATIVA":
         caminho_digitado_cativa = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (Referência SICOOB):",
             value=caminhos_atuais["cativa_sicoob"],
@@ -508,7 +532,7 @@ with col_form:
         )
         botao_rodar_cativa = st.button("PROCESSAR CONCILIAÇÃO", key="btn_cativa")
 
-    elif projeto_ativo == "REVPACK":
+    elif st.session_state.projeto_selecionado == "REVPACK":
         # BLOCO 1 (EM CIMA): CONCILIAÇÃO BANCÁRIA REVPACK
         caminho_digitado_rev_cb = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (CONCILIAÇÃO BANCÁRIA):",
@@ -530,7 +554,8 @@ with col_form:
         botao_rodar_revpack_cs = st.button("PROCESSAR CONTROLE DE SACADOS", key="btn_revpack_cs")
 
 with col_metrics:
-    st.markdown('<div style="margin-top: 5px;"></div>', unsafe_allow_html=True)
+    # Posiciona os cards do meio para baixo na coluna da direita (como na Imagem 2)
+    st.markdown('<div style="margin-top: 155px;"></div>', unsafe_allow_html=True)
     st.markdown(f'''
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
         <div class="dash-card">
@@ -598,7 +623,7 @@ if botao_rodar_cativa:
         log_atual.append(f"[{get_time()}] ✅ [I/O] Matriz OUTROS sincronizada: {len(arquivos_outros_originais)} arquivo(s).")
 
         log_atual.append("=========================================================")
-        log_atual.append("🤖 INICIANDO O ROBÔ DE CONCILIAÇÃO BANCÁRIA (CATIVA)")
+        log_atual.append("🤖 INICIANDO O ROBÔ DE CONCILIAÇÃO BANCÁRIA (GRUPO CATIVA)")
         log_atual.append("=========================================================")
         log_atual.append(f"📁 Pasta SICOOB configurada: {caminho_digitado_cativa}")
         log_atual.append(f"📁 Pasta OUTROS configurada: {caminho_outros}")
@@ -625,7 +650,7 @@ if botao_rodar_cativa:
             log_atual.append("➡️ Por favor, ajuste a pasta e rode novamente.")
             renderizar_terminal(log_placeholder, log_atual, nome_sh)
 
-            st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Divergência (Cativa)", "log": list(log_atual)})
+            st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Divergência (Grupo Cativa)", "log": list(log_atual)})
             st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
             st.error("O processo foi interrompido. Verifique os nomes incorretos no terminal, corrija os espaços duplos no Google Drive e tente novamente.")
             st.stop()
@@ -643,7 +668,7 @@ if botao_rodar_cativa:
             ok = rodar_robo_com_log("ROBÔ OUTROS BANCOS", SCRIPT_CATIVA_OUTROS, destino_outros, log_placeholder, log_atual, nome_sh)
 
         if not ok:
-            st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Falha (Cativa)", "log": list(log_atual)})
+            st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Falha (Grupo Cativa)", "log": list(log_atual)})
         else:
             log_atual.append(f"[{get_time()}] ⬆️ [I/O] Transmitindo relatórios finais (SICOOB) para a nuvem...")
             renderizar_terminal(log_placeholder, log_atual, nome_sh)
@@ -660,18 +685,18 @@ if botao_rodar_cativa:
             renderizar_terminal(log_placeholder, log_atual, nome_sh)
 
             salvar_caminho_especifico("cativa_sicoob", caminho_digitado_cativa)
-            st.session_state.historico_runs.append({"hora": get_time(), "status": "✅ Sucesso (Cativa)", "log": list(log_atual)})
+            st.session_state.historico_runs.append({"hora": get_time(), "status": "✅ Sucesso (Grupo Cativa)", "log": list(log_atual)})
 
     except FileNotFoundError as e:
         log_atual.append(f"[{get_time()}] ❌ [ERRO DE DIRETÓRIO] Pasta não localizada no Drive: {e}")
         renderizar_terminal(log_placeholder, log_atual, nome_sh)
-        st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Erro de Pasta (Cativa)", "log": list(log_atual)})
+        st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Erro de Pasta (Grupo Cativa)", "log": list(log_atual)})
         st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
         st.error(f"Não encontrei uma das pastas no Drive: {e}")
     except Exception as e:
         log_atual.append(f"[{get_time()}] ❌ [ERRO DE SISTEMA] Falha inesperada: {e}")
         renderizar_terminal(log_placeholder, log_atual, nome_sh)
-        st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Erro de Sistema (Cativa)", "log": list(log_atual)})
+        st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Erro de Sistema (Grupo Cativa)", "log": list(log_atual)})
         st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
         st.error(f"Ocorreu um erro inesperado: {e}")
     finally:
@@ -679,7 +704,7 @@ if botao_rodar_cativa:
 
 
 # =====================================================================
-# 2. EXECUÇÃO: GRUPO REVPACK (CONCILIAÇÃO BANCÁRIA OU CONTROLE DE SACADOS)
+# 2. EXECUÇÃO: REVPACK (CONCILIAÇÃO BANCÁRIA OU CONTROLE DE SACADOS)
 # =====================================================================
 elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
     if botao_rodar_revpack_cb:
