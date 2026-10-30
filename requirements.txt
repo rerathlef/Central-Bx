@@ -1,0 +1,11 @@
+streamlit
+pandas
+openpyxl
+pdfplumber
+xlrd
+lxml
+beautifulsoup4
+html5lib
+google-api-python-client
+google-auth
+google-auth-httplib2

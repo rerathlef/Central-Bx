@@ -1,0 +1,782 @@
+import streamlit as st
+import subprocess
+import sys
+import os
+import shutil
+import tempfile
+import json
+import html
+import datetime
+
+import drive_utils
+
+# =====================================================================
+# CONFIGURAÇÃO DA PÁGINA (BX FINANCE THEME - CENTRAL MULTI-PROJETOS)
+# =====================================================================
+st.set_page_config(
+    page_title="Bx finance | Central de Automação",
+    page_icon="💠",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# =====================================================================
+# ESTILO CUSTOMIZADO (CSS) - CORES BX BLUE
+# Cor Principal BX: #6259A4
+# Cor Clara BX (Hover): #7D75BE
+# Cor Escura BX (Shadows): #473F7A
+# RGB BX: 98, 89, 164
+# =====================================================================
+CUSTOM_CSS = '''
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* Fundo Geral Escuro Premium */
+.stApp {
+    background-color: #050505;
+    background-image: radial-gradient(circle at 50% 0%, #100f1a 0%, #050505 40%);
+    color: #e2e8f0;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Ocultar elementos padrão do Streamlit */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Container Principal */
+.main .block-container {
+    padding-top: 2rem;
+    max-width: 1300px;
+}
+
+/* Header BX Finance */
+.bx-header-container {
+    padding: 1rem 0 2rem 0;
+    border-bottom: 1px solid rgba(98, 89, 164, 0.2);
+    margin-bottom: 2.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+.bx-title-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+.bx-logo-text {
+    font-size: 4.5rem; 
+    font-weight: 800; 
+    line-height: 0.9; 
+    letter-spacing: -4px; 
+    font-family: 'Inter', sans-serif;
+}
+.bx-logo-text .b { color: #ffffff; }
+.bx-logo-text .x { color: #6259A4; }
+.bx-logo-sub {
+    font-size: 1.4rem; 
+    font-weight: 300; 
+    color: #a0aec0; 
+    letter-spacing: 0.5px; 
+    margin-top: 0px;
+}
+.bx-subtitle {
+    color: #718096;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-top: 15px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-left: 3px solid #6259A4;
+    padding-left: 10px;
+}
+
+/* Seletor de Projeto Premium */
+div[data-testid="stSelectbox"] > div > div {
+    background-color: #0f0f11 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(98, 89, 164, 0.45) !important;
+    border-radius: 8px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+div[data-testid="stSelectbox"] label {
+    color: #7D75BE !important;
+    font-weight: 700 !important;
+    font-size: 0.8rem !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+/* Inputs Premium */
+.stTextInput > div > div > input {
+    background-color: #0f0f11 !important;
+    color: #ffffff !important;
+    border: 1px solid #1f232b !important;
+    border-radius: 8px;
+    padding: 1rem !important;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+.stTextInput > div > div > input:focus {
+    border-color: #6259A4 !important;
+    box-shadow: 0 0 0 1px #6259A4, 0 0 15px rgba(98, 89, 164, 0.2) !important;
+}
+.stTextInput label {
+    color: #a0aec0 !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+/* Botão de Ação Azul BX */
+.stButton > button {
+    background: linear-gradient(135deg, #6259A4 0%, #473F7A 100%);
+    color: #ffffff !important;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    border: none;
+    padding: 1.8rem 2rem;
+    border-radius: 8px;
+    width: 100%;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    box-shadow: 0 4px 20px rgba(98, 89, 164, 0.25);
+    margin-top: 18px;
+}
+.stButton > button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(98, 89, 164, 0.4);
+    background: linear-gradient(135deg, #7D75BE 0%, #6259A4 100%);
+}
+.stButton > button:active {
+    transform: translateY(1px);
+}
+
+/* Divisor entre blocos da mesma empresa */
+.bx-module-divider {
+    border-top: 1px solid rgba(98, 89, 164, 0.2);
+    margin: 2.2rem 0 1.8rem 0;
+}
+
+/* Console Estilo Terminal Hacker/Finance */
+.bx-terminal-wrapper {
+    background-color: #0a0a0c;
+    border: 1px solid #1f232b;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 20px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.8);
+    overflow: hidden;
+    margin-top: 1rem;
+}
+.bx-terminal-header {
+    background-color: #121418;
+    padding: 12px 20px;
+    border-bottom: 1px solid #1f232b;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.terminal-tab {
+    color: #718096;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.terminal-dot {
+    width: 12px; height: 12px; border-radius: 50%; display: inline-block;
+}
+.dot-red { background-color: #ff5f56; }
+.dot-yellow { background-color: #ffbd2e; }
+.dot-green { background-color: #27c93f; }
+
+.live-badge {
+    display: flex;
+    align-items: center;
+    color: #7D75BE;
+    font-size: 0.75rem;
+    font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    background: rgba(98, 89, 164, 0.1);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(98, 89, 164, 0.2);
+}
+.pulse {
+    width: 8px;
+    height: 8px;
+    background-color: #6259A4;
+    border-radius: 50%;
+    margin-right: 8px;
+    box-shadow: 0 0 0 0 rgba(98, 89, 164, 1);
+    animation: pulse-animation 2s infinite;
+}
+@keyframes pulse-animation {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(98, 89, 164, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(98, 89, 164, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(98, 89, 164, 0); }
+}
+.bx-terminal-body {
+    padding: 20px;
+    height: 480px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: #a0aec0;
+    display: flex;
+    flex-direction: column;
+}
+.log-line { margin: 0; padding: 3px 0; border-bottom: 1px dashed rgba(255,255,255,0.03); }
+.log-highlight { color: #7D75BE; font-weight: 700; }
+.log-success { color: #38A169; font-weight: 700; text-shadow: 0 0 8px rgba(56,161,105,0.3); }
+.log-error { color: #E53E3E; font-weight: 700; text-shadow: 0 0 8px rgba(229,62,62,0.3); }
+.log-info { color: #63B3ED; }
+.log-system { color: #CBD5E0; font-weight: 600; }
+.log-time { color: #4A5568; margin-right: 10px; font-size: 0.75rem;}
+
+/* Scrollbar Hacker */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0a0a0c; }
+::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #6259A4; }
+
+/* Dashboard Cards */
+.dash-card {
+    background: #0f0f11;
+    border: 1px solid #1f232b;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.dash-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #6259A4, #473F7A);
+}
+.dash-value { font-size: 2.2rem; font-weight: 800; color: #ffffff; line-height: 1.2; font-family: 'JetBrains Mono', monospace;}
+.dash-label { font-size: 0.75rem; color: #a0aec0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-top: 8px;}
+
+</style>
+'''
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
+# =====================================================================
+# DIRETÓRIOS DOS ROBÔS (ORGANIZADOS POR SUBPASTAS EM robos/)
+# =====================================================================
+CAMINHO_ARQUIVO_ULTIMO_USO = "ultimo_caminho.json"
+PASTA_BASE_ROBOS = os.path.join(os.path.dirname(__file__), "robos")
+
+# Scripts Cativa (robos/CATIVA/)
+PASTA_ROBOS_CATIVA = os.path.join(PASTA_BASE_ROBOS, "CATIVA")
+SCRIPT_CATIVA_PDF = os.path.join(PASTA_ROBOS_CATIVA, "pdf_pt1.py")
+SCRIPT_CATIVA_SICOOB = os.path.join(PASTA_ROBOS_CATIVA, "sicoob.py")
+SCRIPT_CATIVA_OUTROS = os.path.join(PASTA_ROBOS_CATIVA, "outros.py")
+
+# Scripts Revpack (robos/REVPACK/)
+PASTA_ROBOS_REVPACK = os.path.join(PASTA_BASE_ROBOS, "REVPACK")
+SCRIPT_REVPACK_CB = os.path.join(PASTA_ROBOS_REVPACK, "REV - C.B. - AUT.py")
+SCRIPT_REVPACK_CS = os.path.join(PASTA_ROBOS_REVPACK, "REVPACK - C.S..py")
+
+# Caminhos Pré-Preenchidos Padrão
+CAMINHOS_PADRAO = {
+    "cativa_sicoob": r"2026\10 - Outubro\28.10.2026\SICOOB",
+    "revpack_cb": r"EXTRATOS BANCÁRIOS\2026\10. Outubro\28",
+    "revpack_cs": r"POSIÇÕES FUNDOS\2026\10 - OUT\Fundos 29.10\Trabalhados",
+}
+
+# =====================================================================
+# FUNÇÕES DE APOIO E GERENCIAMENTO DE CAMINHOS
+# =====================================================================
+def carregar_caminhos_salvos():
+    caminhos = dict(CAMINHOS_PADRAO)
+    if os.path.exists(CAMINHO_ARQUIVO_ULTIMO_USO):
+        try:
+            with open(CAMINHO_ARQUIVO_ULTIMO_USO, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                # Compatibilidade com formato antigo da Cativa {"caminho": "..."}
+                if "caminho" in dados and "cativa_sicoob" not in dados:
+                    caminhos["cativa_sicoob"] = dados["caminho"]
+                for k in CAMINHOS_PADRAO:
+                    if dados.get(k):
+                        caminhos[k] = dados[k]
+        except Exception:
+            pass
+    return caminhos
+
+
+def salvar_caminho_especifico(chave, valor):
+    caminhos = carregar_caminhos_salvos()
+    caminhos[chave] = valor
+    try:
+        with open(CAMINHO_ARQUIVO_ULTIMO_USO, "w", encoding="utf-8") as f:
+            json.dump(caminhos, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def caminho_sem_sicoob(caminho_sicoob):
+    partes = caminho_sicoob.replace("\\", "/").rstrip("/").split("/")
+    if partes and partes[-1].upper() == "SICOOB":
+        partes = partes[:-1]
+    return "/".join(partes)
+
+
+def get_time():
+    return datetime.datetime.now().strftime("%H:%M:%S")
+
+
+def renderizar_terminal(placeholder, log_list, nome_sh="conciliacao.sh"):
+    html_content = f'''
+    <div class="bx-terminal-wrapper">
+        <div class="bx-terminal-header">
+            <div class="terminal-tab">
+                <span class="terminal-dot dot-red"></span>
+                <span class="terminal-dot dot-yellow"></span>
+                <span class="terminal-dot dot-green"></span>
+                <span style="margin-left: 10px;">bash ~ bx_finance/{nome_sh}</span>
+            </div>
+            <div class="live-badge"><div class="pulse"></div> SERVER LIVE</div>
+        </div>
+        <div class="bx-terminal-body" id="terminal-body">
+    '''
+
+    for linha in log_list:
+        if not linha.strip():
+            continue
+
+        hora_str = ""
+        if linha.startswith("["):
+            parts = linha.split("] ", 1)
+            if len(parts) == 2:
+                hora_str = f'<span class="log-time">{parts[0]}]</span>'
+                linha = parts[1]
+
+        linha_safe = html.escape(linha).replace('\n', '<br>')
+
+        css_class = "log-line"
+        upper_line = linha.upper()
+        if "ERRO" in upper_line or "❌" in linha or "FALHA" in upper_line:
+            css_class += " log-error"
+        elif "SUCESSO" in upper_line or "🎉" in linha or "✅" in linha or "COMPLETO" in upper_line:
+            css_class += " log-success"
+        elif "▶️" in linha or "🚀" in linha or "INICIANDO" in upper_line:
+            css_class += " log-highlight"
+        elif "📁" in linha or "🔐" in linha or "⬆️" in linha or "⬇️" in linha:
+            css_class += " log-system"
+        elif "Processando:" in linha or "Encontrados" in linha or "Lendo extrato" in linha or "->" in linha:
+            css_class += " log-info"
+
+        html_content += f'<div class="{css_class}">{hora_str}{linha_safe}</div>'
+
+    html_content += '''
+        </div>
+        <script>
+            var term = window.parent.document.getElementById('terminal-body');
+            if(term) { term.scrollTop = term.scrollHeight; }
+        </script>
+    </div>
+    '''
+    placeholder.markdown(html_content, unsafe_allow_html=True)
+
+
+def rodar_robo_com_log(nome_robo, caminho_script, pasta_trabalho, log_placeholder, log_atual, nome_sh="conciliacao.sh"):
+    log_atual.append(f"[{get_time()}] ▶️ [BOOT] INICIANDO MÓDULO: {nome_robo}...")
+    renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+    processo = subprocess.Popen(
+        [sys.executable, caminho_script, pasta_trabalho],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        encoding='utf-8',
+        errors='replace'
+    )
+
+    for linha in processo.stdout:
+        clean_line = linha.strip("\n")
+        if clean_line:
+            log_atual.append(f"[{get_time()}] {clean_line}")
+            renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+    processo.wait()
+
+    if processo.returncode != 0:
+        log_atual.append(f"[{get_time()}] ❌ [CRÍTICO] MÓDULO {nome_robo} ENCERROU COM ERRO (CÓDIGO {processo.returncode}).")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+        return False
+
+    return True
+
+
+# =====================================================================
+# CONTROLE DE SESSÃO (MEMÓRIA ISOLADA POR USUÁRIO) E BARRA LATERAL
+# =====================================================================
+if "historico_runs" not in st.session_state:
+    st.session_state.historico_runs = []
+if "mostrar_log_idx" not in st.session_state:
+    st.session_state.mostrar_log_idx = None
+
+with st.sidebar:
+    st.markdown("<h3 style='color: #6259A4; font-weight: 800; font-family: Inter, sans-serif;'>📜 HISTÓRICO</h3>", unsafe_allow_html=True)
+    st.markdown("<hr style='border-color: #1f232b; margin-top: 0;'>", unsafe_allow_html=True)
+
+    if not st.session_state.historico_runs:
+        st.markdown("<span style='color: #a0aec0; font-size: 0.85rem;'>Nenhuma execução na sessão atual.</span>", unsafe_allow_html=True)
+    else:
+        for i, run in enumerate(reversed(st.session_state.historico_runs)):
+            idx = len(st.session_state.historico_runs) - 1 - i
+            cor_status = "#38A169" if "Sucesso" in run["status"] else "#E53E3E"
+
+            st.markdown(f"**⏰ {run['hora']}** <br> <span style='color: {cor_status}; font-weight: 600; font-size: 0.85rem;'>{run['status']}</span>", unsafe_allow_html=True)
+            if st.button(f"🔎 Ver Log", key=f"btn_log_{idx}", use_container_width=True):
+                st.session_state.mostrar_log_idx = idx
+            st.markdown("<hr style='border-color: #1f232b; margin: 10px 0;'>", unsafe_allow_html=True)
+
+
+# =====================================================================
+# SELETOR DE PROJETO / CLIENTE (PERMITE TAMBÉM ?projeto=REVPACK NA URL)
+# =====================================================================
+OPCOES_PROJETOS = ["REVPACK", "CATIVA"]
+projeto_url = st.query_params.get("projeto", "").upper()
+idx_inicial = OPCOES_PROJETOS.index(projeto_url) if projeto_url in OPCOES_PROJETOS else 0
+
+col_sel, _ = st.columns([2.5, 5.5])
+with col_sel:
+    projeto_ativo = st.selectbox(
+        "AMBIENTE / GRUPO EMPRESARIAL ATIVO:",
+        options=OPCOES_PROJETOS,
+        index=idx_inicial,
+        key="seletor_projeto_bx"
+    )
+
+# Configura textos do Header e Cards conforme o projeto selecionado
+if projeto_ativo == "CATIVA":
+    subtitulo_header = "Robô de conciliação bancária"
+    qtd_modulos_card = "03"
+else:
+    subtitulo_header = "Robô de conciliação bancária & Controle de sacados"
+    qtd_modulos_card = "02"
+
+# =====================================================================
+# HEADER PRINCIPAL BX FINANCE DINÂMICO
+# =====================================================================
+st.markdown(f'''
+<div class="bx-header-container">
+<div class="bx-title-wrapper">
+<div class="bx-logo-text"><span class="b">B</span><span class="x">x</span></div>
+<div class="bx-logo-sub">finance</div>
+<div class="bx-subtitle">{subtitulo_header}</div>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; padding-bottom: 5px;">
+<div style="color: #a0aec0; font-family: 'Inter', sans-serif; font-size: 0.75rem; letter-spacing: 5px; font-weight: 600; margin-bottom: -8px;">— GRUPO —</div>
+<div style="color: #ffffff; font-family: 'Inter', sans-serif; font-size: 2.4rem; font-weight: 800; letter-spacing: 1px;">{projeto_ativo}</div>
+<div style="color: #4A5568; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; margin-top: 5px;">[ V 2.0 / BUILD SECURE ]</div>
+</div>
+</div>
+''', unsafe_allow_html=True)
+
+col_form, col_space, col_metrics = st.columns([5, 0.5, 2.5])
+
+caminhos_atuais = carregar_caminhos_salvos()
+
+botao_rodar_cativa = False
+botao_rodar_revpack_cb = False
+botao_rodar_revpack_cs = False
+
+with col_form:
+    if projeto_ativo == "CATIVA":
+        caminho_digitado_cativa = st.text_input(
+            "DIRETÓRIO ALVO NO GOOGLE DRIVE (Referência SICOOB):",
+            value=caminhos_atuais["cativa_sicoob"],
+            help=r"Exemplo: 2026\10 - Outubro\28.10.2026\SICOOB",
+            key="input_cativa_sicoob"
+        )
+        botao_rodar_cativa = st.button("PROCESSAR CONCILIAÇÃO", key="btn_cativa")
+
+    elif projeto_ativo == "REVPACK":
+        # BLOCO 1 (EM CIMA): CONCILIAÇÃO BANCÁRIA REVPACK
+        caminho_digitado_rev_cb = st.text_input(
+            "DIRETÓRIO ALVO NO GOOGLE DRIVE (CONCILIAÇÃO BANCÁRIA):",
+            value=caminhos_atuais["revpack_cb"],
+            help=r"Exemplo: EXTRATOS BANCÁRIOS\2026\10. Outubro\28",
+            key="input_revpack_cb"
+        )
+        botao_rodar_revpack_cb = st.button("PROCESSAR CONCILIAÇÃO", key="btn_revpack_cb")
+
+        st.markdown('<div class="bx-module-divider"></div>', unsafe_allow_html=True)
+
+        # BLOCO 2 (EMBAIXO): CONTROLE DE SACADOS REVPACK
+        caminho_digitado_rev_cs = st.text_input(
+            "DIRETÓRIO ALVO NO GOOGLE DRIVE (CONTROLE DE SACADOS):",
+            value=caminhos_atuais["revpack_cs"],
+            help=r"Exemplo: POSIÇÕES FUNDOS\2026\10 - OUT\Fundos 29.10\Trabalhados",
+            key="input_revpack_cs"
+        )
+        botao_rodar_revpack_cs = st.button("PROCESSAR CONTROLE DE SACADOS", key="btn_revpack_cs")
+
+with col_metrics:
+    st.markdown('<div style="margin-top: 5px;"></div>', unsafe_allow_html=True)
+    st.markdown(f'''
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="dash-card">
+            <div class="dash-value">{qtd_modulos_card}</div>
+            <div class="dash-label">Módulos Auto</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-value" style="color: #38A169;">OK</div>
+            <div class="dash-label">GCP Cloud</div>
+        </div>
+        <div class="dash-card" style="grid-column: span 2; padding: 18px;">
+            <div class="dash-value" style="font-size: 1.3rem; color: #6259A4;">OAUTH 2.0 ATIVO</div>
+            <div class="dash-label">Token Security Status</div>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+
+# =====================================================================
+# 1. EXECUÇÃO: GRUPO CATIVA (SICOOB + OUTROS)
+# =====================================================================
+if botao_rodar_cativa:
+    st.markdown("<h3 style='color: #ffffff; font-weight: 800; font-size: 1.2rem; margin-bottom: 0px;'>🖥️ TERMINAL DE PROCESSAMENTO</h3>", unsafe_allow_html=True)
+    log_placeholder = st.empty()
+    log_atual = []
+    nome_sh = "cativa_conciliacao.sh"
+
+    renderizar_terminal(log_placeholder, log_atual, nome_sh)
+    pasta_temporaria = tempfile.mkdtemp(prefix="bx_cativa_")
+
+    try:
+        log_atual.append(f"[{get_time()}] 🔐 [AUTH] Inicializando túnel seguro com Google Drive OAuth 2.0...")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+        credenciais = json.loads(st.secrets["GOOGLE_TOKEN_JSON"])
+        servico = drive_utils.conectar_drive(credenciais)
+
+        log_atual.append(f"[{get_time()}] ✅ [AUTH] Autenticação validada com sucesso.")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+        log_atual.append(f"[{get_time()}] 📁 [I/O] Varrendo diretório alvo: {caminho_digitado_cativa}")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+        id_pasta_sicoob = drive_utils.navegar_caminho(
+            servico, caminho_digitado_cativa, id_raiz=drive_utils.ID_PASTA_RAIZ_CATIVA
+        )
+        caminho_outros = caminho_sem_sicoob(caminho_digitado_cativa)
+        id_pasta_outros = drive_utils.navegar_caminho(
+            servico, caminho_outros, id_raiz=drive_utils.ID_PASTA_RAIZ_CATIVA
+        )
+
+        destino_sicoob = os.path.join(pasta_temporaria, "SICOOB")
+        destino_outros = pasta_temporaria
+
+        log_atual.append(f"[{get_time()}] ⬇️ [I/O] Efetuando download de matriz SICOOB...")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+        arquivos_sicoob_originais = drive_utils.baixar_pasta_inteira(servico, id_pasta_sicoob, destino_sicoob)
+        log_atual.append(f"[{get_time()}] ✅ [I/O] Matriz SICOOB sincronizada: {len(arquivos_sicoob_originais)} arquivo(s).")
+
+        log_atual.append(f"[{get_time()}] ⬇️ [I/O] Efetuando download de matriz OUTROS BANCOS...")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+        arquivos_outros_originais = drive_utils.baixar_pasta_inteira(servico, id_pasta_outros, destino_outros)
+        log_atual.append(f"[{get_time()}] ✅ [I/O] Matriz OUTROS sincronizada: {len(arquivos_outros_originais)} arquivo(s).")
+
+        log_atual.append("=========================================================")
+        log_atual.append("🤖 INICIANDO O ROBÔ DE CONCILIAÇÃO BANCÁRIA (CATIVA)")
+        log_atual.append("=========================================================")
+        log_atual.append(f"📁 Pasta SICOOB configurada: {caminho_digitado_cativa}")
+        log_atual.append(f"📁 Pasta OUTROS configurada: {caminho_outros}")
+        log_atual.append("-" * 50)
+        log_atual.append("🔍 VERIFICANDO ARQUIVOS NA PASTA...")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+        arquivos_baixados = os.listdir(destino_sicoob)
+        divergentes = []
+        for arq in arquivos_baixados:
+            if arq.startswith("~$"):
+                continue
+            if "  " in arq:
+                divergentes.append(arq)
+
+        if divergentes:
+            log_atual.append("")
+            log_atual.append("❌ ERRO: Problema na validação dos arquivos antes de iniciar os robôs!")
+            log_atual.append("")
+            log_atual.append("🟡 DIVERGÊNCIA ENCONTRADA (Nomes incorretos ou arquivos não mapeados):")
+            for d in divergentes:
+                log_atual.append(f"   - {d}")
+            log_atual.append("")
+            log_atual.append("➡️ Por favor, ajuste a pasta e rode novamente.")
+            renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+            st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Divergência (Cativa)", "log": list(log_atual)})
+            st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
+            st.error("O processo foi interrompido. Verifique os nomes incorretos no terminal, corrija os espaços duplos no Google Drive e tente novamente.")
+            st.stop()
+
+        log_atual.append("✅ Todos os arquivos obrigatórios estão presentes e não há nomes divergentes!")
+        log_atual.append("-" * 50)
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+        ok = rodar_robo_com_log("ROBÔ 1 (PDF + PIX)", SCRIPT_CATIVA_PDF, destino_sicoob, log_placeholder, log_atual, nome_sh)
+
+        if ok:
+            ok = rodar_robo_com_log("ROBÔ 2 (CONCILIAÇÃO SICOOB)", SCRIPT_CATIVA_SICOOB, destino_sicoob, log_placeholder, log_atual, nome_sh)
+
+        if ok:
+            ok = rodar_robo_com_log("ROBÔ OUTROS BANCOS", SCRIPT_CATIVA_OUTROS, destino_outros, log_placeholder, log_atual, nome_sh)
+
+        if not ok:
+            st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Falha (Cativa)", "log": list(log_atual)})
+        else:
+            log_atual.append(f"[{get_time()}] ⬆️ [I/O] Transmitindo relatórios finais (SICOOB) para a nuvem...")
+            renderizar_terminal(log_placeholder, log_atual, nome_sh)
+            drive_utils.subir_arquivos_novos(servico, id_pasta_sicoob, destino_sicoob, arquivos_sicoob_originais)
+
+            log_atual.append(f"[{get_time()}] ⬆️ [I/O] Transmitindo relatórios finais (OUTROS) para a nuvem...")
+            renderizar_terminal(log_placeholder, log_atual, nome_sh)
+            drive_utils.subir_arquivos_novos(servico, id_pasta_outros, destino_outros, arquivos_outros_originais)
+
+            log_atual.append("")
+            log_atual.append("=========================================================")
+            log_atual.append("✅ PROCESSO CONCLUÍDO COM SUCESSO! - Os relatórios gerados já estão disponíveis no seu Google Drive.")
+            log_atual.append("=========================================================")
+            renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+            salvar_caminho_especifico("cativa_sicoob", caminho_digitado_cativa)
+            st.session_state.historico_runs.append({"hora": get_time(), "status": "✅ Sucesso (Cativa)", "log": list(log_atual)})
+
+    except FileNotFoundError as e:
+        log_atual.append(f"[{get_time()}] ❌ [ERRO DE DIRETÓRIO] Pasta não localizada no Drive: {e}")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+        st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Erro de Pasta (Cativa)", "log": list(log_atual)})
+        st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
+        st.error(f"Não encontrei uma das pastas no Drive: {e}")
+    except Exception as e:
+        log_atual.append(f"[{get_time()}] ❌ [ERRO DE SISTEMA] Falha inesperada: {e}")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+        st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Erro de Sistema (Cativa)", "log": list(log_atual)})
+        st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
+        st.error(f"Ocorreu um erro inesperado: {e}")
+    finally:
+        shutil.rmtree(pasta_temporaria, ignore_errors=True)
+
+
+# =====================================================================
+# 2. EXECUÇÃO: GRUPO REVPACK (CONCILIAÇÃO BANCÁRIA OU CONTROLE DE SACADOS)
+# =====================================================================
+elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
+    if botao_rodar_revpack_cb:
+        nome_operacao = "Conciliação Bancária"
+        nome_modulo = "AUT - CB - REVPACK"
+        script_alvo = SCRIPT_REVPACK_CB
+        caminho_alvo = caminho_digitado_rev_cb
+        id_raiz_alvo = drive_utils.ID_PASTA_REVPACK_CONCILIACAO
+        chave_salvar = "revpack_cb"
+        nome_sh = "revpack_conciliacao.sh"
+    else:
+        nome_operacao = "Controle de Sacados"
+        nome_modulo = "CONTROLE DE SACADOS - REVPACK"
+        script_alvo = SCRIPT_REVPACK_CS
+        caminho_alvo = caminho_digitado_rev_cs
+        id_raiz_alvo = drive_utils.ID_PASTA_REVPACK_SACADOS
+        chave_salvar = "revpack_cs"
+        nome_sh = "revpack_sacados.sh"
+
+    st.markdown("<h3 style='color: #ffffff; font-weight: 800; font-size: 1.2rem; margin-bottom: 0px;'>🖥️ TERMINAL DE PROCESSAMENTO</h3>", unsafe_allow_html=True)
+    log_placeholder = st.empty()
+    log_atual = []
+
+    renderizar_terminal(log_placeholder, log_atual, nome_sh)
+    pasta_temporaria = tempfile.mkdtemp(prefix="bx_revpack_")
+
+    try:
+        log_atual.append(f"[{get_time()}] 🔐 [AUTH] Inicializando túnel seguro com Google Drive OAuth 2.0...")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+        credenciais = json.loads(st.secrets["GOOGLE_TOKEN_JSON"])
+        servico = drive_utils.conectar_drive(credenciais)
+
+        log_atual.append(f"[{get_time()}] ✅ [AUTH] Autenticação validada com sucesso.")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+        log_atual.append(f"[{get_time()}] 📁 [I/O] Varrendo diretório alvo ({nome_operacao}): {caminho_alvo}")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+        id_pasta_final = drive_utils.navegar_caminho(servico, caminho_alvo, id_raiz=id_raiz_alvo)
+
+        log_atual.append(f"[{get_time()}] ⬇️ [I/O] Efetuando download dos arquivos da pasta alvo...")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+        arquivos_originais = drive_utils.baixar_pasta_inteira(servico, id_pasta_final, pasta_temporaria)
+        log_atual.append(f"[{get_time()}] ✅ [I/O] Pasta sincronizada: {len(arquivos_originais)} arquivo(s) baixado(s).")
+
+        log_atual.append("=========================================================")
+        log_atual.append(f"🤖 INICIANDO {nome_operacao.upper()} (REVPACK)")
+        log_atual.append("=========================================================")
+        log_atual.append(f"📁 Diretório configurado: {caminho_alvo}")
+        log_atual.append("-" * 50)
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+        ok = rodar_robo_com_log(nome_modulo, script_alvo, pasta_temporaria, log_placeholder, log_atual, nome_sh)
+
+        if not ok:
+            st.session_state.historico_runs.append({"hora": get_time(), "status": f"❌ Falha (Revpack {nome_operacao})", "log": list(log_atual)})
+            st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
+        else:
+            log_atual.append(f"[{get_time()}] ⬆️ [I/O] Transmitindo relatórios finais para a nuvem...")
+            renderizar_terminal(log_placeholder, log_atual, nome_sh)
+            enviados = drive_utils.subir_arquivos_novos(
+                servico, id_pasta_final, pasta_temporaria, arquivos_originais, apenas_novos=True
+            )
+            log_atual.append(f"[{get_time()}] ✅ [I/O] Relatórios sincronizados no Drive: {', '.join(enviados) if enviados else 'Concluído'}")
+
+            log_atual.append("")
+            log_atual.append("=========================================================")
+            log_atual.append("✅ PROCESSO CONCLUÍDO COM SUCESSO! - Os relatórios gerados já estão disponíveis no seu Google Drive.")
+            log_atual.append("=========================================================")
+            renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+            salvar_caminho_especifico(chave_salvar, caminho_alvo)
+            st.session_state.historico_runs.append({"hora": get_time(), "status": f"✅ Sucesso (Revpack {nome_operacao})", "log": list(log_atual)})
+
+    except FileNotFoundError as e:
+        log_atual.append(f"[{get_time()}] ❌ [ERRO DE DIRETÓRIO] Pasta não localizada no Drive: {e}")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+        st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Erro de Pasta (Revpack)", "log": list(log_atual)})
+        st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
+        st.error(f"Não encontrei uma das pastas no Drive: {e}")
+    except Exception as e:
+        log_atual.append(f"[{get_time()}] ❌ [ERRO DE SISTEMA] Falha inesperada: {e}")
+        renderizar_terminal(log_placeholder, log_atual, nome_sh)
+        st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Erro de Sistema (Revpack)", "log": list(log_atual)})
+        st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
+        st.error(f"Ocorreu um erro inesperado: {e}")
+    finally:
+        shutil.rmtree(pasta_temporaria, ignore_errors=True)
+
+
+# =====================================================================
+# RENDERIZAR LOG HISTÓRICO SE SELECIONADO NA LATERAL
+# =====================================================================
+elif st.session_state.mostrar_log_idx is not None:
+    st.markdown("<h3 style='color: #ffffff; font-weight: 800; font-size: 1.2rem; margin-bottom: 0px;'>🖥️ TERMINAL DE PROCESSAMENTO (HISTÓRICO)</h3>", unsafe_allow_html=True)
+    log_placeholder = st.empty()
+    idx = st.session_state.mostrar_log_idx
+    log_salvo = st.session_state.historico_runs[idx]["log"]
+    renderizar_terminal(log_placeholder, log_salvo)
