@@ -213,6 +213,93 @@ def baixar_pasta_inteira(servico, id_pasta, destino_local):
     return baixados
 
 
+def baixar_arquivo_controle_oficial(servico, nome_arquivo, destino_local, id_pasta_extratos, id_pasta_financeiro=""):
+    """
+    Localiza o arquivo oficial (ex: CONTROLE DE SACADOS.xlsx) na pasta 03 Financeiro
+    (ou busca pelo nome no Drive) e baixa para destino_local. Retorna (id_arquivo_drive, caminho_local).
+    """
+    pastas_para_procurar = []
+    if id_pasta_financeiro:
+        pastas_para_procurar.append(id_pasta_financeiro)
+
+    # Descobre automaticamente a pasta pai de '02. EXTRATOS' (que é a '03 Financeiro')
+    if id_pasta_extratos:
+        try:
+            meta = servico.files().get(
+                fileId=id_pasta_extratos,
+                fields="parents",
+                supportsAllDrives=True,
+            ).execute()
+            parents = meta.get("parents", [])
+            for p in parents:
+                if p not in pastas_para_procurar:
+                    pastas_para_procurar.append(p)
+        except Exception:
+            pass
+        if id_pasta_extratos not in pastas_para_procurar:
+            pastas_para_procurar.append(id_pasta_extratos)
+
+    alvo_norm = _normalizar_nome(nome_arquivo)
+    arquivo_encontrado = None
+
+    # 1. Procura nas pastas candidatas (03 Financeiro / 02. EXTRATOS)
+    for id_p in pastas_para_procurar:
+        try:
+            itens = listar_arquivos_da_pasta(servico, id_p)
+            for arq in itens:
+                if _normalizar_nome(arq["name"]) == alvo_norm:
+                    arquivo_encontrado = arq
+                    break
+            if arquivo_encontrado:
+                break
+        except Exception:
+            continue
+
+    # 2. Fallback: se não achou na pasta pai, procura pelo nome exato no Drive
+    if not arquivo_encontrado:
+        nome_escaped = nome_arquivo.replace("'", "\\'")
+        query = f"name = '{nome_escaped}' and trashed = false"
+        res = servico.files().list(
+            q=query,
+            fields="files(id, name, mimeType, shortcutDetails)",
+            pageSize=10,
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+        ).execute()
+        arquivos = res.get("files", [])
+        if arquivos:
+            arquivo_encontrado = arquivos[0]
+
+    if not arquivo_encontrado:
+        raise FileNotFoundError(
+            f"Arquivo oficial '{nome_arquivo}' nao foi encontrado na pasta '03 Financeiro'. "
+            f"Verifique se o arquivo '{nome_arquivo}' esta compartilhado no Google Drive."
+        )
+
+    file_id = _resolver_id_real(arquivo_encontrado)
+    caminho_local = os.path.join(destino_local, nome_arquivo)
+
+    request = servico.files().get_media(fileId=file_id, supportsAllDrives=True)
+    fh = io.FileIO(caminho_local, "wb")
+    downloader = MediaIoBaseDownload(fh, request)
+    concluido = False
+    while not concluido:
+        _, concluido = downloader.next_chunk()
+    fh.close()
+
+    return file_id, caminho_local
+
+
+def atualizar_arquivo_por_id(servico, file_id, caminho_local):
+    """Sobrescreve um arquivo existente no Google Drive mantendo o mesmo ID."""
+    media = MediaFileUpload(caminho_local, resumable=True)
+    servico.files().update(
+        fileId=file_id,
+        media_body=media,
+        supportsAllDrives=True,
+    ).execute()
+
+
 def subir_arquivos_novos(servico, id_pasta, pasta_local, arquivos_originais, apenas_novos=False):
     arquivos_existentes_no_drive = {
         a["name"]: a["id"] for a in listar_arquivos_da_pasta(servico, id_pasta)
