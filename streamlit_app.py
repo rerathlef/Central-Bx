@@ -17,8 +17,8 @@ import drive_utils
 # --- DIRETÓRIOS PRÉ-PREENCHIDOS NA TELA (GOOGLE DRIVE) ---
 DIRETORIO_PADRAO_CATIVA_SICOOB = r"2026\10 - Outubro\28.10.2026\SICOOB"
 
-DIRETORIO_PADRAO_REVPACK_CONCILIACAO = r"EXTRATOS BANCARIOS\2026\10. Outubro\28"
-DIRETORIO_PADRAO_REVPACK_SACADOS = r"POSICOES FUNDOS\2026\10 - OUT\Fundos 13.10\Trabalhados"
+DIRETORIO_PADRAO_REVPACK_CONCILIACAO = r"EXTRATOS BANCÁRIOS\2026\10. Outubro\28"
+DIRETORIO_PADRAO_REVPACK_SACADOS = r"POSIÇÕES FUNDOS\2026\10 - OUT\Fundos 13.10\Trabalhados"
 
 # --- IDs DAS PASTAS RAIZ NO GOOGLE DRIVE ---
 ID_DRIVE_CATIVA = "1F6NiwgME7xPe_xUQQwzQHwwaBenRXO6N"
@@ -691,7 +691,8 @@ if botao_rodar_cativa:
         credenciais = json.loads(st.secrets["GOOGLE_TOKEN_JSON"])
         servico = drive_utils.conectar_drive(credenciais)
 
-        log_atual.append(f"[{get_time()}] ✅ [AUTH] Autenticação validada com sucesso.")
+        conta_drive = drive_utils.obter_email_autenticado(servico)
+        log_atual.append(f"[{get_time()}] ✅ [AUTH] Autenticação validada ({conta_drive}).")
         renderizar_terminal(log_placeholder, log_atual, nome_sh)
 
         log_atual.append(f"[{get_time()}] 📁 [I/O] Varrendo diretório alvo: {caminho_digitado_cativa}")
@@ -834,7 +835,8 @@ elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
         credenciais = json.loads(st.secrets["GOOGLE_TOKEN_JSON"])
         servico = drive_utils.conectar_drive(credenciais)
 
-        log_atual.append(f"[{get_time()}] ✅ [AUTH] Autenticação validada com sucesso.")
+        conta_drive = drive_utils.obter_email_autenticado(servico)
+        log_atual.append(f"[{get_time()}] ✅ [AUTH] Autenticação validada ({conta_drive}).")
         renderizar_terminal(log_placeholder, log_atual, nome_sh)
 
         log_atual.append(f"[{get_time()}] 📁 [I/O] Varrendo diretório alvo ({nome_operacao}): {caminho_alvo}")
