@@ -1,14 +1,17 @@
-"""
 drive_utils.py
 =====================================================================
-Módulo unificado de conexão com Google Drive via OAuth 2.0 (Central Bx Finance).
-Gerencia a navegação de pastas, download para diretório temporário isolado
-e upload dos relatórios finais para múltiplos projetos (Cativa, Revpack, etc.).
+Módulo unificado e blindado de conexão com Google Drive via OAuth 2.0.
+Suporta:
+  - Comparação de pastas ignorando acentos (POSIÇÕES == POSICOES)
+  - Pastas compartilhadas e Drives Compartilhados (supportsAllDrives)
+  - Atalhos de pastas do Google Drive (application/vnd.google-apps.shortcut)
+  - Diagnóstico claro de permissão de e-mail e pastas visíveis
 =====================================================================
 """
 
 import io
 import os
+import unicodedata
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 from google.oauth2.credentials import Credentials
@@ -22,99 +25,164 @@ ID_PASTA_RAIZ_CATIVA = "1F6NiwgME7xPe_xUQQwzQHwwaBenRXO6N"
 ID_PASTA_REVPACK_CONCILIACAO = "1a5CLnMLhinJAAqdD9Tdr3fvFBtcf_hj0"
 ID_PASTA_REVPACK_SACADOS = "1a5CLnMLhinJAAqdD9Tdr3fvFBtcf_hj0"
 
-# Compatibilidade com chamadas padrão
 ID_PASTA_RAIZ = ID_PASTA_RAIZ_CATIVA
 
 
-def conectar_drive(credenciais_dict):
-    """
-    Conecta na API do Google Drive usando os dados OAuth 2.0 salvos nos Secrets.
-    Remove 'expiry' para forçar renovação automática via refresh_token.
-    """
-    info = dict(credenciais_dict)
+def _normalizar_nome(texto):
+    """Remove acentos, cedilha e espaços extras, convertendo para maiúsculas."""
+    if not texto:
+        return ""
+    sem_acento = "".join(
+        c for c in unicodedata.normalize("NFKD", str(texto))
+        if not unicodedata.combining(c)
+    )
+    # Normaliza múltiplos espaços em um único espaço
+    return " ".join(sem_acento.upper().strip().split())
 
+
+def conectar_drive(credenciais_dict):
+    """Conecta na API do Google Drive usando os dados OAuth 2.0 salvos nos Secrets."""
+    info = dict(credenciais_dict)
     if "expiry" in info:
         del info["expiry"]
 
     creds = Credentials.from_authorized_user_info(info, SCOPES)
     servico = build("drive", "v3", credentials=creds)
-
     return servico
 
 
-def _achar_subpasta(servico, nome_pasta, id_pasta_pai):
-    """Procura uma subpasta pelo nome dentro de uma pasta pai."""
-    nome_escaped = nome_pasta.replace("'", "\\'")
+def obter_email_autenticado(servico):
+    """Retorna o e-mail da conta Google que gerou o GOOGLE_TOKEN_JSON."""
+    try:
+        info = servico.about().get(fields="user(emailAddress, displayName)").execute()
+        user = info.get("user", {})
+        email = user.get("emailAddress", "desconhecido")
+        nome = user.get("displayName", "")
+        return f"{nome} <{email}>".strip() if nome else email
+    except Exception:
+        return "Conta não identificada"
+
+
+def _resolver_id_real(servico, item):
+    """Se o item for um atalho do Drive, retorna o targetId da pasta real."""
+    if item.get("mimeType") == "application/vnd.google-apps.shortcut":
+        detalhes = item.get("shortcutDetails", {})
+        target_id = detalhes.get("targetId")
+        if target_id:
+            return target_id
+    return item["id"]
+
+
+def _listar_subpastas_pai(servico, id_pasta_pai):
+    """Lista todas as subpastas (e atalhos de pastas) dentro de id_pasta_pai."""
+    pastas = []
+    page_token = None
     query = (
         f"'{id_pasta_pai}' in parents "
-        f"and name = '{nome_escaped}' "
-        f"and mimeType = 'application/vnd.google-apps.folder' "
+        f"and (mimeType = 'application/vnd.google-apps.folder' "
+        f"     or mimeType = 'application/vnd.google-apps.shortcut') "
         f"and trashed = false"
     )
-    resultado = servico.files().list(
-        q=query, fields="files(id, name)", pageSize=10
-    ).execute()
-    arquivos = resultado.get("files", [])
-    if arquivos:
-        return arquivos[0]["id"]
+    while True:
+        res = servico.files().list(
+            q=query,
+            fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
+            pageToken=page_token,
+            pageSize=100,
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+        ).execute()
+        pastas.extend(res.get("files", []))
+        page_token = res.get("nextPageToken")
+        if not page_token:
+            break
+    return pastas
 
-    # Fallback: busca ignorando diferenças de maiúsculas/minúsculas ou espaços nas pontas
-    query_all = (
-        f"'{id_pasta_pai}' in parents "
-        f"and mimeType = 'application/vnd.google-apps.folder' "
-        f"and trashed = false"
-    )
-    res_all = servico.files().list(
-        q=query_all, fields="files(id, name)", pageSize=100
-    ).execute()
-    for arq in res_all.get("files", []):
-        if arq["name"].strip().upper() == nome_pasta.strip().upper():
-            return arq["id"]
 
-    raise FileNotFoundError(
-        f"Pasta '{nome_pasta}' não encontrada dentro da pasta pai (id={id_pasta_pai})."
-    )
+def _achar_subpasta(servico, nome_pasta, id_pasta_pai):
+    """
+    Procura uma subpasta pelo nome (ignorando acentos/maiúsculas e aceitando atalhos)
+    dentro de uma pasta pai. Se não achar, informa exatamente quais pastas existem lá.
+    """
+    # 1. Verifica primeiro se a pasta pai existe e se o token tem permissão nela
+    nome_pai = id_pasta_pai
+    try:
+        meta_pai = servico.files().get(
+            fileId=id_pasta_pai,
+            fields="id, name, mimeType, shortcutDetails",
+            supportsAllDrives=True,
+        ).execute()
+        nome_pai = f"'{meta_pai.get('name', id_pasta_pai)}' (id={id_pasta_pai})"
+        if meta_pai.get("mimeType") == "application/vnd.google-apps.shortcut":
+            id_pasta_pai = meta_pai.get("shortcutDetails", {}).get("targetId", id_pasta_pai)
+    except Exception as e:
+        email_atual = obter_email_autenticado(servico)
+        raise FileNotFoundError(
+            f"A conta do token ({email_atual}) NÃO tem permissão para acessar a pasta pai (id={id_pasta_pai}) "
+            f"ou o ID está incorreto. Compartilhe essa pasta no Google Drive com {email_atual}. Detalhe: {e}"
+        )
+
+    subpastas = _listar_subpastas_pai(servico, id_pasta_pai)
+    alvo_norm = _normalizar_nome(nome_pasta)
+
+    # 1ª passagem: match exato do nome
+    for item in subpastas:
+        if item["name"].strip() == nome_pasta.strip():
+            return _resolver_id_real(servico, item)
+
+    # 2ª passagem: match ignorando acentos, cedilha e maiúsculas/minúsculas
+    for item in subpastas:
+        if _normalizar_nome(item["name"]) == alvo_norm:
+            return _resolver_id_real(servico, item)
+
+    # Se não encontrou, mostra quais pastas estão visíveis para facilitar o diagnóstico
+    nomes_visiveis = [p["name"] for p in subpastas]
+    email_atual = obter_email_autenticado(servico)
+    if not nomes_visiveis:
+        raise FileNotFoundError(
+            f"Pasta '{nome_pasta}' não encontrada dentro de {nome_pai}. "
+            f"Nenhuma subpasta está visível para a conta {email_atual} (verifique se a subpasta foi compartilhada com essa conta)."
+        )
+    else:
+        raise FileNotFoundError(
+            f"Pasta '{nome_pasta}' não encontrada dentro de {nome_pai}. "
+            f"Subpastas visíveis neste local: {nomes_visiveis}"
+        )
 
 
 def navegar_caminho(servico, caminho_relativo, id_raiz=ID_PASTA_RAIZ):
     """
     Navega pasta por pasta a partir de `id_raiz` e devolve o ID da pasta final.
     Aceita tanto barra normal '/' quanto contrabarra '\\'.
-    Se o usuário incluir o próprio nome da pasta raiz no início do caminho,
-    detecta e pula automaticamente para evitar erro de subpasta.
     """
     caminho_normalizado = caminho_relativo.replace("\\", "/")
     partes = [p.strip() for p in caminho_normalizado.split("/") if p.strip()]
 
     id_atual = id_raiz
 
-    nomes_raiz_conhecidos = {
-        "12 CATIVA",
-        "08 REVPACK",
-        "EXTRATOS BANCÁRIOS",
-        "EXTRATOS BANCARIOS",
-        "POSIÇÕES FUNDOS",
-        "POSICOES FUNDOS",
-    }
+    # Verifica o nome real da pasta raiz no Drive
+    nome_raiz_norm = ""
     try:
-        meta_raiz = servico.files().get(fileId=id_raiz, fields="name").execute()
-        nome_raiz_real = meta_raiz.get("name", "").strip().upper()
-        if nome_raiz_real:
-            nomes_raiz_conhecidos.add(nome_raiz_real)
-    except Exception:
-        pass
+        meta_raiz = servico.files().get(
+            fileId=id_raiz,
+            fields="id, name, mimeType, shortcutDetails",
+            supportsAllDrives=True,
+        ).execute()
+        nome_raiz_norm = _normalizar_nome(meta_raiz.get("name", ""))
+        if meta_raiz.get("mimeType") == "application/vnd.google-apps.shortcut":
+            id_atual = meta_raiz.get("shortcutDetails", {}).get("targetId", id_raiz)
+    except Exception as e:
+        email_atual = obter_email_autenticado(servico)
+        raise FileNotFoundError(
+            f"A conta do token ({email_atual}) NÃO tem acesso à pasta raiz configurada (id={id_raiz}). "
+            f"Compartilhe a pasta no Google Drive com {email_atual}."
+        )
 
     for idx, nome_parte in enumerate(partes):
-        if idx == 0 and id_atual == id_raiz:
-            if nome_parte.strip().upper() == "12 CATIVA":
-                continue
-            try:
-                id_atual = _achar_subpasta(servico, nome_parte, id_atual)
-                continue
-            except FileNotFoundError:
-                if nome_parte.strip().upper() in nomes_raiz_conhecidos:
-                    continue
-                raise
+        parte_norm = _normalizar_nome(nome_parte)
+        # Só pula o primeiro item se o usuário digitou o próprio nome da pasta raiz onde já estamos
+        if idx == 0 and (parte_norm == nome_raiz_norm or parte_norm == "12 CATIVA"):
+            continue
 
         id_atual = _achar_subpasta(servico, nome_parte, id_atual)
 
@@ -129,9 +197,11 @@ def listar_arquivos_da_pasta(servico, id_pasta):
         query = f"'{id_pasta}' in parents and trashed = false"
         resposta = servico.files().list(
             q=query,
-            fields="nextPageToken, files(id, name, mimeType)",
+            fields="nextPageToken, files(id, name, mimeType, shortcutDetails)",
             pageToken=page_token,
             pageSize=100,
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
         ).execute()
         arquivos.extend(resposta.get("files", []))
         page_token = resposta.get("nextPageToken")
@@ -141,29 +211,38 @@ def listar_arquivos_da_pasta(servico, id_pasta):
 
 
 def baixar_pasta_inteira(servico, id_pasta, destino_local):
-    """
-    Baixa todos os arquivos de uma pasta do Drive para uma pasta temporária local.
-    Ignora subpastas.
-    """
+    """Baixa todos os arquivos de uma pasta do Drive para uma pasta temporária local."""
     os.makedirs(destino_local, exist_ok=True)
     arquivos = listar_arquivos_da_pasta(servico, id_pasta)
 
     baixados = []
     for arq in arquivos:
-        if arq["mimeType"] == "application/vnd.google-apps.folder":
+        mime = arq.get("mimeType", "")
+        file_id = arq["id"]
+
+        # Se for um atalho para arquivo, resolve o arquivo real
+        if mime == "application/vnd.google-apps.shortcut":
+            detalhes = arq.get("shortcutDetails", {})
+            target_mime = detalhes.get("targetMimeType", "")
+            target_id = detalhes.get("targetId")
+            if target_id:
+                file_id = target_id
+                mime = target_mime
+
+        if mime == "application/vnd.google-apps.folder":
             continue
 
         caminho_local = os.path.join(destino_local, arq["name"])
 
-        if arq["mimeType"] == "application/vnd.google-apps.spreadsheet":
+        if mime == "application/vnd.google-apps.spreadsheet":
             if not caminho_local.lower().endswith(".xlsx"):
                 caminho_local += ".xlsx"
             request = servico.files().export_media(
-                fileId=arq["id"],
+                fileId=file_id,
                 mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         else:
-            request = servico.files().get_media(fileId=arq["id"])
+            request = servico.files().get_media(fileId=file_id, supportsAllDrives=True)
 
         fh = io.FileIO(caminho_local, "wb")
         downloader = MediaIoBaseDownload(fh, request)
@@ -177,10 +256,7 @@ def baixar_pasta_inteira(servico, id_pasta, destino_local):
 
 
 def subir_arquivos_novos(servico, id_pasta, pasta_local, arquivos_originais, apenas_novos=False):
-    """
-    Sobe para o Drive os arquivos criados/atualizados pelos robôs na pasta temporária.
-    Se `apenas_novos=True`, ignora os arquivos de entrada que não são relatórios finais.
-    """
+    """Sobe para o Drive os arquivos criados/atualizados pelos robôs na pasta temporária."""
     arquivos_existentes_no_drive = {
         a["name"]: a["id"] for a in listar_arquivos_da_pasta(servico, id_pasta)
     }
@@ -209,10 +285,15 @@ def subir_arquivos_novos(servico, id_pasta, pasta_local, arquivos_originais, ape
             servico.files().update(
                 fileId=arquivos_existentes_no_drive[nome_arquivo],
                 media_body=media,
+                supportsAllDrives=True,
             ).execute()
         else:
             metadata = {"name": nome_arquivo, "parents": [id_pasta]}
-            servico.files().create(body=metadata, media_body=media).execute()
+            servico.files().create(
+                body=metadata,
+                media_body=media,
+                supportsAllDrives=True,
+            ).execute()
 
         enviados.append(nome_arquivo)
 
