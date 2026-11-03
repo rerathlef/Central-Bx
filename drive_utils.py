@@ -1,14 +1,3 @@
-drive_utils.py
-=====================================================================
-Módulo unificado e blindado de conexão com Google Drive via OAuth 2.0.
-Suporta:
-  - Comparação de pastas ignorando acentos (POSIÇÕES == POSICOES)
-  - Pastas compartilhadas e Drives Compartilhados (supportsAllDrives)
-  - Atalhos de pastas do Google Drive (application/vnd.google-apps.shortcut)
-  - Diagnóstico claro de permissão de e-mail e pastas visíveis
-=====================================================================
-"""
-
 import io
 import os
 import unicodedata
@@ -18,41 +7,32 @@ from google.oauth2.credentials import Credentials
 
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 
-# =====================================================================
-# IDs DAS PASTAS RAIZ NO GOOGLE DRIVE POR PROJETO
-# =====================================================================
 ID_PASTA_RAIZ_CATIVA = "1F6NiwgME7xPe_xUQQwzQHwwaBenRXO6N"
 ID_PASTA_REVPACK_CONCILIACAO = "1a5CLnMLhinJAAqdD9Tdr3fvFBtcf_hj0"
 ID_PASTA_REVPACK_SACADOS = "1a5CLnMLhinJAAqdD9Tdr3fvFBtcf_hj0"
-
 ID_PASTA_RAIZ = ID_PASTA_RAIZ_CATIVA
 
 
 def _normalizar_nome(texto):
-    """Remove acentos, cedilha e espaços extras, convertendo para maiúsculas."""
     if not texto:
         return ""
     sem_acento = "".join(
         c for c in unicodedata.normalize("NFKD", str(texto))
         if not unicodedata.combining(c)
     )
-    # Normaliza múltiplos espaços em um único espaço
     return " ".join(sem_acento.upper().strip().split())
 
 
 def conectar_drive(credenciais_dict):
-    """Conecta na API do Google Drive usando os dados OAuth 2.0 salvos nos Secrets."""
     info = dict(credenciais_dict)
     if "expiry" in info:
         del info["expiry"]
-
     creds = Credentials.from_authorized_user_info(info, SCOPES)
     servico = build("drive", "v3", credentials=creds)
     return servico
 
 
 def obter_email_autenticado(servico):
-    """Retorna o e-mail da conta Google que gerou o GOOGLE_TOKEN_JSON."""
     try:
         info = servico.about().get(fields="user(emailAddress, displayName)").execute()
         user = info.get("user", {})
@@ -60,11 +40,10 @@ def obter_email_autenticado(servico):
         nome = user.get("displayName", "")
         return f"{nome} <{email}>".strip() if nome else email
     except Exception:
-        return "Conta não identificada"
+        return "Conta nao identificada"
 
 
-def _resolver_id_real(servico, item):
-    """Se o item for um atalho do Drive, retorna o targetId da pasta real."""
+def _resolver_id_real(item):
     if item.get("mimeType") == "application/vnd.google-apps.shortcut":
         detalhes = item.get("shortcutDetails", {})
         target_id = detalhes.get("targetId")
@@ -74,7 +53,6 @@ def _resolver_id_real(servico, item):
 
 
 def _listar_subpastas_pai(servico, id_pasta_pai):
-    """Lista todas as subpastas (e atalhos de pastas) dentro de id_pasta_pai."""
     pastas = []
     page_token = None
     query = (
@@ -100,11 +78,6 @@ def _listar_subpastas_pai(servico, id_pasta_pai):
 
 
 def _achar_subpasta(servico, nome_pasta, id_pasta_pai):
-    """
-    Procura uma subpasta pelo nome (ignorando acentos/maiúsculas e aceitando atalhos)
-    dentro de uma pasta pai. Se não achar, informa exatamente quais pastas existem lá.
-    """
-    # 1. Verifica primeiro se a pasta pai existe e se o token tem permissão nela
     nome_pai = id_pasta_pai
     try:
         meta_pai = servico.files().get(
@@ -118,49 +91,39 @@ def _achar_subpasta(servico, nome_pasta, id_pasta_pai):
     except Exception as e:
         email_atual = obter_email_autenticado(servico)
         raise FileNotFoundError(
-            f"A conta do token ({email_atual}) NÃO tem permissão para acessar a pasta pai (id={id_pasta_pai}) "
-            f"ou o ID está incorreto. Compartilhe essa pasta no Google Drive com {email_atual}. Detalhe: {e}"
+            f"A conta do token ({email_atual}) NAO tem permissao na pasta pai (id={id_pasta_pai}). "
+            f"Compartilhe essa pasta no Google Drive com {email_atual}. Detalhe: {e}"
         )
 
     subpastas = _listar_subpastas_pai(servico, id_pasta_pai)
     alvo_norm = _normalizar_nome(nome_pasta)
 
-    # 1ª passagem: match exato do nome
     for item in subpastas:
         if item["name"].strip() == nome_pasta.strip():
-            return _resolver_id_real(servico, item)
+            return _resolver_id_real(item)
 
-    # 2ª passagem: match ignorando acentos, cedilha e maiúsculas/minúsculas
     for item in subpastas:
         if _normalizar_nome(item["name"]) == alvo_norm:
-            return _resolver_id_real(servico, item)
+            return _resolver_id_real(item)
 
-    # Se não encontrou, mostra quais pastas estão visíveis para facilitar o diagnóstico
     nomes_visiveis = [p["name"] for p in subpastas]
     email_atual = obter_email_autenticado(servico)
     if not nomes_visiveis:
         raise FileNotFoundError(
-            f"Pasta '{nome_pasta}' não encontrada dentro de {nome_pai}. "
-            f"Nenhuma subpasta está visível para a conta {email_atual} (verifique se a subpasta foi compartilhada com essa conta)."
+            f"Pasta '{nome_pasta}' nao encontrada dentro de {nome_pai}. "
+            f"Nenhuma subpasta visivel para {email_atual} (verifique o compartilhamento no Drive)."
         )
-    else:
-        raise FileNotFoundError(
-            f"Pasta '{nome_pasta}' não encontrada dentro de {nome_pai}. "
-            f"Subpastas visíveis neste local: {nomes_visiveis}"
-        )
+    raise FileNotFoundError(
+        f"Pasta '{nome_pasta}' nao encontrada dentro de {nome_pai}. "
+        f"Subpastas visiveis neste local: {nomes_visiveis}"
+    )
 
 
 def navegar_caminho(servico, caminho_relativo, id_raiz=ID_PASTA_RAIZ):
-    """
-    Navega pasta por pasta a partir de `id_raiz` e devolve o ID da pasta final.
-    Aceita tanto barra normal '/' quanto contrabarra '\\'.
-    """
     caminho_normalizado = caminho_relativo.replace("\\", "/")
     partes = [p.strip() for p in caminho_normalizado.split("/") if p.strip()]
-
     id_atual = id_raiz
 
-    # Verifica o nome real da pasta raiz no Drive
     nome_raiz_norm = ""
     try:
         meta_raiz = servico.files().get(
@@ -171,26 +134,23 @@ def navegar_caminho(servico, caminho_relativo, id_raiz=ID_PASTA_RAIZ):
         nome_raiz_norm = _normalizar_nome(meta_raiz.get("name", ""))
         if meta_raiz.get("mimeType") == "application/vnd.google-apps.shortcut":
             id_atual = meta_raiz.get("shortcutDetails", {}).get("targetId", id_raiz)
-    except Exception as e:
+    except Exception:
         email_atual = obter_email_autenticado(servico)
         raise FileNotFoundError(
-            f"A conta do token ({email_atual}) NÃO tem acesso à pasta raiz configurada (id={id_raiz}). "
+            f"A conta do token ({email_atual}) NAO tem acesso a pasta raiz (id={id_raiz}). "
             f"Compartilhe a pasta no Google Drive com {email_atual}."
         )
 
     for idx, nome_parte in enumerate(partes):
         parte_norm = _normalizar_nome(nome_parte)
-        # Só pula o primeiro item se o usuário digitou o próprio nome da pasta raiz onde já estamos
         if idx == 0 and (parte_norm == nome_raiz_norm or parte_norm == "12 CATIVA"):
             continue
-
         id_atual = _achar_subpasta(servico, nome_parte, id_atual)
 
     return id_atual
 
 
 def listar_arquivos_da_pasta(servico, id_pasta):
-    """Lista todos os arquivos dentro de uma pasta do Drive."""
     arquivos = []
     page_token = None
     while True:
@@ -211,16 +171,14 @@ def listar_arquivos_da_pasta(servico, id_pasta):
 
 
 def baixar_pasta_inteira(servico, id_pasta, destino_local):
-    """Baixa todos os arquivos de uma pasta do Drive para uma pasta temporária local."""
     os.makedirs(destino_local, exist_ok=True)
     arquivos = listar_arquivos_da_pasta(servico, id_pasta)
-
     baixados = []
+
     for arq in arquivos:
         mime = arq.get("mimeType", "")
         file_id = arq["id"]
 
-        # Se for um atalho para arquivo, resolve o arquivo real
         if mime == "application/vnd.google-apps.shortcut":
             detalhes = arq.get("shortcutDetails", {})
             target_mime = detalhes.get("targetMimeType", "")
@@ -256,13 +214,12 @@ def baixar_pasta_inteira(servico, id_pasta, destino_local):
 
 
 def subir_arquivos_novos(servico, id_pasta, pasta_local, arquivos_originais, apenas_novos=False):
-    """Sobe para o Drive os arquivos criados/atualizados pelos robôs na pasta temporária."""
     arquivos_existentes_no_drive = {
         a["name"]: a["id"] for a in listar_arquivos_da_pasta(servico, id_pasta)
     }
     originais_set = set(arquivos_originais or [])
-
     enviados = []
+
     for nome_arquivo in os.listdir(pasta_local):
         caminho_completo = os.path.join(pasta_local, nome_arquivo)
         if not os.path.isfile(caminho_completo):
