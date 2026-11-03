@@ -25,6 +25,11 @@ ID_DRIVE_CATIVA = "1F6NiwgME7xPe_xUQQwzQHwwaBenRXO6N"
 ID_DRIVE_REVPACK_CONCILIACAO = "1a5CLnMLhinJAAqdD9Tdr3fvFBtcf_hj0"
 ID_DRIVE_REVPACK_SACADOS = "1a5CLnMLhinJAAqdD9Tdr3fvFBtcf_hj0"
 
+# Opcional: ID da pasta '03 Financeiro' onde fica o 'CONTROLE DE SACADOS.xlsx'
+# (Se deixar vazio "", o sistema acha a pasta pai de '02. EXTRATOS' automaticamente)
+ID_DRIVE_REVPACK_FINANCEIRO = ""
+NOME_ARQUIVO_CONTROLE_OFICIAL_REVPACK = "CONTROLE DE SACADOS.xlsx"
+
 # --- CAMINHOS DOS ROBÔS DENTRO DO REPOSITÓRIO ---
 PASTA_BASE_ROBOS = os.path.join(os.path.dirname(__file__), "robos")
 
@@ -38,8 +43,8 @@ SCRIPT_CATIVA_OUTROS = os.path.join(PASTA_ROBOS_CATIVA, "outros.py")
 PASTA_ROBOS_REVPACK = os.path.join(PASTA_BASE_ROBOS, "REVPACK")
 SCRIPT_REVPACK_CB = os.path.join(PASTA_ROBOS_REVPACK, "REV - C.B. - AUT.py")
 SCRIPT_REVPACK_CS = os.path.join(PASTA_ROBOS_REVPACK, "REVPACK - C.S..py")
+SCRIPT_REVPACK_CS_PT2 = os.path.join(PASTA_ROBOS_REVPACK, "REVPACK - C.S. PT 2.py")
 
-# Arquivo local que memoriza o último caminho digitado na sessão
 CAMINHO_ARQUIVO_ULTIMO_USO = "ultimo_caminho.json"
 
 CAMINHOS_PADRAO = {
@@ -60,13 +65,12 @@ st.set_page_config(
 )
 
 # =====================================================================
-# 3. ESTILO CUSTOMIZADO (CSS) - FIEL AO LAYOUT DA IMAGEM DE REFERÊNCIA
+# 3. ESTILO CUSTOMIZADO (CSS)
 # =====================================================================
 CUSTOM_CSS = '''
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
-/* Fundo Geral Escuro com Glow Roxo e Ondas Vetoriais no Rodapé */
 .stApp {
     background-color: #07060e;
     background-image:
@@ -77,7 +81,6 @@ CUSTOM_CSS = '''
     font-family: 'Inter', sans-serif;
 }
 
-/* Ondas sutis decorativas no fundo inferior (idêntico ao mockup) */
 .bx-bg-waves {
     position: fixed;
     bottom: 0;
@@ -89,12 +92,10 @@ CUSTOM_CSS = '''
     opacity: 0.45;
 }
 
-/* Ocultar elementos padrão do Streamlit */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
 
-/* Container Principal */
 .main .block-container {
     padding-top: 2.8rem;
     padding-bottom: 3rem;
@@ -103,9 +104,6 @@ header {visibility: hidden;}
     z-index: 1;
 }
 
-/* =====================================================================
-   HEADER: ESQUERDA "CENTRAL BX DE AUTOMAÇÕES" | DIREITA "Bx finance"
-   ===================================================================== */
 .bx-header-container {
     padding: 0.5rem 0 1.8rem 0;
     margin-bottom: 1.8rem;
@@ -150,7 +148,6 @@ header {visibility: hidden;}
     font-family: 'JetBrains Mono', monospace;
 }
 
-/* Logo BX Finance no canto superior direito */
 .bx-right-logo-wrapper {
     display: flex;
     flex-direction: column;
@@ -182,7 +179,6 @@ header {visibility: hidden;}
     margin-top: 6px;
 }
 
-/* Título "SELECIONE O PROJETO" */
 .bx-select-title {
     color: #ffffff;
     font-family: 'Inter', sans-serif;
@@ -193,9 +189,6 @@ header {visibility: hidden;}
     margin-bottom: 14px;
 }
 
-/* =====================================================================
-   BOTÕES PILL DE SELEÇÃO DE PROJETO (SECONDARY = INATIVO, PRIMARY = ATIVO)
-   ===================================================================== */
 div[data-testid="stButton"] > button[kind="primary"] {
     background: linear-gradient(135deg, #7468C5 0%, #5B50A0 100%) !important;
     color: #ffffff !important;
@@ -236,7 +229,6 @@ div[data-testid="stButton"] > button[kind="secondary"]:hover {
     transform: translateY(-2px) !important;
 }
 
-/* Inputs de Diretório Premium */
 .stTextInput > div > div > input {
     background-color: rgba(15, 14, 26, 0.85) !important;
     color: #ffffff !important;
@@ -261,15 +253,11 @@ div[data-testid="stButton"] > button[kind="secondary"]:hover {
     margin-bottom: 6px;
 }
 
-/* Divisor sutil entre os módulos */
 .bx-module-divider {
     border-top: 1px solid rgba(125, 117, 190, 0.16);
     margin: 1.6rem 0 1.4rem 0;
 }
 
-/* =====================================================================
-   CARDS DE STATUS À DIREITA (IDÊNTICOS À IMAGEM DE REFERÊNCIA)
-   ===================================================================== */
 .dash-card {
     background: rgba(20, 18, 38, 0.62);
     border: 1px solid rgba(125, 117, 190, 0.22);
@@ -297,7 +285,6 @@ div[data-testid="stButton"] > button[kind="secondary"]:hover {
     margin-top: 8px;
 }
 
-/* Console Estilo Terminal Hacker/Finance */
 .bx-terminal-wrapper {
     background-color: #0a0a0f;
     border: 1px solid rgba(125, 117, 190, 0.25);
@@ -376,14 +363,12 @@ div[data-testid="stButton"] > button[kind="secondary"]:hover {
 .log-system { color: #CBD5E0; font-weight: 600; }
 .log-time { color: #4A5568; margin-right: 10px; font-size: 0.75rem;}
 
-/* Scrollbar Hacker */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #0a0a0c; }
 ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #6259A4; }
 </style>
 
-<!-- Ondas decorativas no rodapé idênticas ao mockup -->
 <svg class="bx-bg-waves" viewBox="0 0 1440 200" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
     <path d="M0 110 C 320 40, 580 180, 920 110 C 1180 55, 1340 130, 1440 110" stroke="rgba(125, 117, 190, 0.22)" stroke-width="1.2" fill="none"/>
     <path d="M0 145 C 360 75, 620 205, 960 135 C 1200 85, 1360 155, 1440 140" stroke="rgba(125, 117, 190, 0.14)" stroke-width="1.2" fill="none"/>
@@ -486,12 +471,17 @@ def renderizar_terminal(placeholder, log_list, nome_sh="conciliacao.sh"):
     placeholder.markdown(html_content, unsafe_allow_html=True)
 
 
-def rodar_robo_com_log(nome_robo, caminho_script, pasta_trabalho, log_placeholder, log_atual, nome_sh="conciliacao.sh"):
+def rodar_robo_com_log(nome_robo, caminho_script, argumentos_extras, log_placeholder, log_atual, nome_sh="conciliacao.sh"):
     log_atual.append(f"[{get_time()}] ▶️ [BOOT] INICIANDO MÓDULO: {nome_robo}...")
     renderizar_terminal(log_placeholder, log_atual, nome_sh)
 
+    if isinstance(argumentos_extras, str):
+        cmd_args = [sys.executable, caminho_script, argumentos_extras]
+    else:
+        cmd_args = [sys.executable, caminho_script] + list(argumentos_extras)
+
     processo = subprocess.Popen(
-        [sys.executable, caminho_script, pasta_trabalho],
+        cmd_args,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -559,10 +549,10 @@ if projeto_ativo == "GRUPO CATIVA":
     qtd_modulos_card = "03"
 elif projeto_ativo == "REVPACK":
     subtitulo_header = "REVPACK — ROBÔ DE CONCILIAÇÃO BANCÁRIA & CONTROLE DE SACADOS"
-    qtd_modulos_card = "02"
+    qtd_modulos_card = "03"
 else:
     subtitulo_header = "PAINEL CENTRAL DE ROBÔS DE CONCILIAÇÃO BANCÁRIA & CONTROLE DE SACADOS"
-    qtd_modulos_card = "05"
+    qtd_modulos_card = "06"
 
 st.markdown(f'''
 <div class="bx-header-container">
@@ -588,6 +578,7 @@ caminhos_atuais = carregar_caminhos_salvos()
 botao_rodar_cativa = False
 botao_rodar_revpack_cb = False
 botao_rodar_revpack_cs = False
+data_historico_rev_cs = ""
 
 with col_form:
     st.markdown('<div class="bx-select-title">SELECIONE O PROJETO</div>', unsafe_allow_html=True)
@@ -639,12 +630,19 @@ with col_form:
 
         st.markdown('<div class="bx-module-divider"></div>', unsafe_allow_html=True)
 
-        # BLOCO 2 (EMBAIXO): CONTROLE DE SACADOS REVPACK
+        # BLOCO 2 (EMBAIXO): CONTROLE DE SACADOS REVPACK (PARTE 1 + PARTE 2)
         caminho_digitado_rev_cs = st.text_input(
             "DIRETÓRIO ALVO NO GOOGLE DRIVE (CONTROLE DE SACADOS):",
             value=caminhos_atuais["revpack_cs"],
             help=f"Exemplo: {DIRETORIO_PADRAO_REVPACK_SACADOS}",
             key="input_revpack_cs"
+        )
+        data_historico_rev_cs = st.text_input(
+            "DATA DA ÚLTIMA ATUALIZAÇÃO (ABA DE BACKUP NO CONTROLE OFICIAL - EX: 25-11):",
+            value="",
+            placeholder="Ex: 25-11 (Preencha para atualizar também a planilha CONTROLE DE SACADOS.xlsx)",
+            help="Substitui o pop-up da Parte 2: cria a aba 'BASE <data>' e cola os dados novos na aba 'BASE' mantendo as fórmulas.",
+            key="input_data_hist_revpack_cs"
         )
         c_btn_cs, _ = st.columns([2.5, 2.7])
         with c_btn_cs:
@@ -801,7 +799,7 @@ if botao_rodar_cativa:
 
 
 # =====================================================================
-# 8. EXECUÇÃO: REVPACK (CONCILIAÇÃO BANCÁRIA OU CONTROLE DE SACADOS)
+# 8. EXECUÇÃO: REVPACK (CONCILIAÇÃO BANCÁRIA OU CONTROLE DE SACADOS PT1 + PT2)
 # =====================================================================
 elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
     if botao_rodar_revpack_cb:
@@ -814,7 +812,7 @@ elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
         nome_sh = "revpack_conciliacao.sh"
     else:
         nome_operacao = "Controle de Sacados"
-        nome_modulo = "CONTROLE DE SACADOS - REVPACK"
+        nome_modulo = "CONTROLE DE SACADOS - REVPACK (PT 1)"
         script_alvo = SCRIPT_REVPACK_CS
         caminho_alvo = caminho_digitado_rev_cs
         id_raiz_alvo = ID_DRIVE_REVPACK_SACADOS
@@ -862,12 +860,55 @@ elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
             st.session_state.historico_runs.append({"hora": get_time(), "status": f"❌ Falha (Revpack {nome_operacao})", "log": list(log_atual)})
             st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
         else:
-            log_atual.append(f"[{get_time()}] ⬆️ [I/O] Transmitindo relatórios finais para a nuvem...")
+            log_atual.append(f"[{get_time()}] ⬆️ [I/O] Transmitindo relatórios gerados pela Parte 1 para a nuvem...")
             renderizar_terminal(log_placeholder, log_atual, nome_sh)
             enviados = drive_utils.subir_arquivos_novos(
                 servico, id_pasta_final, pasta_temporaria, arquivos_originais, apenas_novos=True
             )
-            log_atual.append(f"[{get_time()}] ✅ [I/O] Relatórios sincronizados no Drive: {', '.join(enviados) if enviados else 'Concluído'}")
+            log_atual.append(f"[{get_time()}] ✅ [I/O] Relatórios da Parte 1 sincronizados no Drive: {', '.join(enviados) if enviados else 'Concluído'}")
+
+            # -----------------------------------------------------------------
+            # PARTE 2 DO CONTROLE DE SACADOS (SE A DATA DE BACKUP FOI PREENCHIDA)
+            # -----------------------------------------------------------------
+            if botao_rodar_revpack_cs and data_historico_rev_cs.strip():
+                data_limpa = data_historico_rev_cs.strip()
+                log_atual.append("-" * 50)
+                log_atual.append(f"[{get_time()}] ⬇️ [I/O] Localizando e baixando '{NOME_ARQUIVO_CONTROLE_OFICIAL_REVPACK}' (Pasta 03 Financeiro)...")
+                renderizar_terminal(log_placeholder, log_atual, nome_sh)
+
+                pasta_p2 = os.path.join(pasta_temporaria, "oficial_p2")
+                os.makedirs(pasta_p2, exist_ok=True)
+
+                id_arq_oficial, caminho_p2_local = drive_utils.baixar_arquivo_controle_oficial(
+                    servico,
+                    NOME_ARQUIVO_CONTROLE_OFICIAL_REVPACK,
+                    pasta_p2,
+                    id_pasta_extratos=id_raiz_alvo,
+                    id_pasta_financeiro=ID_DRIVE_REVPACK_FINANCEIRO,
+                )
+
+                caminho_p1_local = os.path.join(
+                    pasta_temporaria, "CONTROLE DE SACADOS AUTOMATIZADO - REVPACK.xlsx"
+                )
+
+                ok_pt2 = rodar_robo_com_log(
+                    "CONTROLE DE SACADOS - REVPACK (PT 2 - PLANILHA OFICIAL)",
+                    SCRIPT_REVPACK_CS_PT2,
+                    [caminho_p1_local, caminho_p2_local, data_limpa],
+                    log_placeholder,
+                    log_atual,
+                    nome_sh,
+                )
+
+                if ok_pt2:
+                    log_atual.append(f"[{get_time()}] ⬆️ [I/O] Atualizando '{NOME_ARQUIVO_CONTROLE_OFICIAL_REVPACK}' no Google Drive...")
+                    renderizar_terminal(log_placeholder, log_atual, nome_sh)
+                    drive_utils.atualizar_arquivo_por_id(servico, id_arq_oficial, caminho_p2_local)
+                    log_atual.append(f"[{get_time()}] ✅ [I/O] '{NOME_ARQUIVO_CONTROLE_OFICIAL_REVPACK}' atualizado com a aba 'BASE {data_limpa}'!")
+                else:
+                    st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Falha (Revpack Sacados PT 2)", "log": list(log_atual)})
+                    st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
+                    st.stop()
 
             log_atual.append("")
             log_atual.append("=========================================================")
@@ -879,11 +920,11 @@ elif botao_rodar_revpack_cb or botao_rodar_revpack_cs:
             st.session_state.historico_runs.append({"hora": get_time(), "status": f"✅ Sucesso (Revpack {nome_operacao})", "log": list(log_atual)})
 
     except FileNotFoundError as e:
-        log_atual.append(f"[{get_time()}] ❌ [ERRO DE DIRETÓRIO] Pasta não localizada no Drive: {e}")
+        log_atual.append(f"[{get_time()}] ❌ [ERRO DE DIRETÓRIO] Pasta ou arquivo não localizado no Drive: {e}")
         renderizar_terminal(log_placeholder, log_atual, nome_sh)
         st.session_state.historico_runs.append({"hora": get_time(), "status": "❌ Erro de Pasta (Revpack)", "log": list(log_atual)})
         st.session_state.mostrar_log_idx = len(st.session_state.historico_runs) - 1
-        st.error(f"Não encontrei uma das pastas no Drive: {e}")
+        st.error(f"Não encontrei uma das pastas ou arquivos no Drive: {e}")
     except Exception as e:
         log_atual.append(f"[{get_time()}] ❌ [ERRO DE SISTEMA] Falha inesperada: {e}")
         renderizar_terminal(log_placeholder, log_atual, nome_sh)
